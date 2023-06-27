@@ -19,7 +19,8 @@ app = FastAPI()
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse({'detail': exc.errors()[0]['loc'][-1]+','+exc.errors()[0]['msg']}, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    return JSONResponse({'detail': exc.errors()[0]['loc'][-1]+','+exc.errors()[0]['msg']},
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
 @app.post('/authn')
