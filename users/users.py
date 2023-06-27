@@ -117,6 +117,7 @@ def login(u: UserLoginModel):
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Cannot login. Please Check Email and Password and try again"
     )
+# test 1
 
 
 @app.post('/logout')
