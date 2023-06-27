@@ -75,6 +75,7 @@ def register(u: UserCreateModel):
                        password=u.password,
                        role=Role.GUEST,
                        organization='None',
+                       create_at=datetime.now(),
                        is_active=True)
     u = create_user(user)
     if u:

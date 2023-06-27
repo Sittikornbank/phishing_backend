@@ -96,7 +96,8 @@ def create_user(user_in: UserDbModel):
                     password=user_in.password,
                     role=user_in.role.value,
                     organization=user_in.organization,
-                    phonenumber=user_in.phonenumber)
+                    phonenumber=user_in.phonenumber,
+                    create_at=user_in.create_at)
         user.password = (bcrypt.hashpw(user.password.encode(
             'utf-8'), bcrypt.gensalt())).decode('utf-8')
         db.add(user)
