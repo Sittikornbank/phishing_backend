@@ -1,27 +1,32 @@
 import uvicorn
 from datetime import datetime
 from fastapi import Request, FastAPI, status, HTTPException, Depends
-from schemas import UserCreateModel, UserFormModel, UserLoginModel, UserDbModel, Role
-from models import (engine, create_user, get_all_users,
-                    get_user_by_organize, Base, update_last_login,
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from schemas import UserCreateModel,UserFormModel, UserLoginModel, UserDbModel, Role
+from models import (engine, create_user, get_all_users, 
+                    get_user_by_organize, Base, update_last_login, 
                     get_user_by_id, update_user, delete_user)
-from auth import (get_token, authn, authz, add_session, remove_session_by_token,
+from auth import (get_token, authn, authz, add_session, remove_session_by_token, 
                   check_email_password, check_used_email_pass, check_organization)
+import re
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc:RequestValidationError):
+    return JSONResponse({'detail': exc.errors()[0]['loc'][-1]+','+exc.errors()[0]['msg']}, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 @app.post('/authn')
-def token_authentication(req: Request):
+def token_authentication(req:Request):
     try:
         api_key = req.body['api_key']
         token = req.body['token']
-        result = authn(api_key, token)
-        if result:
-            return result
+        result = authn(api_key,token)
+        return result
     except:
         raise HTTPException(
             status_code=status.HTTP_511_NETWORK_AUTHENTICATION_REQUIRED,
@@ -30,17 +35,17 @@ def token_authentication(req: Request):
 
 
 @app.post('/authz')
-def token_authentication(req: Request):
+def token_authentication(req:Request):
     try:
         api_key = req.body['api_key']
         token = req.body['token']
         roles = None
         organiz = None
         if 'roles' in req.body:
-            roles = tuple(req.body['roles'])
+            roles =  tuple(req.body['roles'])
         if 'organization' in req.body:
-            organiz = tuple(req.body['organization'])
-        result = authz(api_key, token, roles, organiz)
+            organiz =  tuple(req.body['organization'])
+        result = authz(api_key,token,roles, organiz)
         if result:
             return result
     except:
@@ -52,6 +57,12 @@ def token_authentication(req: Request):
 
 @app.post('/register')
 def register(u: UserCreateModel):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if not (re.fullmatch(regex, u.email)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid email format"
+        )
     check_used_email_pass(email=u.email, username=u.username)
     user = UserDbModel(username=u.username,
                        email=u.email,
@@ -63,13 +74,15 @@ def register(u: UserCreateModel):
                        organization='None',
                        is_active=True)
     u = create_user(user)
-    if u:
-        return {'username': u.username,
-                'email': u.email,
-                'firstname': u.firstname,
-                'lastname': u.lastname,
-                'role': u.role,
-                'is_active': u.is_active}
+    if u: 
+        return {
+            'username': u.username,
+            'email': u.email,
+            'firstname': u.firstname,
+            'lastname': u.lastname,
+            'role': u.role,
+            'is_active': u.is_active
+        }
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Cannot register user. Please try again later"
@@ -78,22 +91,28 @@ def register(u: UserCreateModel):
 
 @app.post('/login')
 def login(u: UserLoginModel):
-    user = check_email_password(u.email, u.password)
+    user = check_email_password(u.email,u.password)
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    if not (re.fullmatch(regex, u.email)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid email format"
+        )
     if user:
         token = add_session(user)
         if token:
             update_last_login(user.id)
-            return {'username': user.username,
+            return {'username':user.username,
                     'email': user.email,
                     'firstname': user.firstname,
                     'lastname': user.lastname,
                     'organization': user.organization,
                     'role': user.role,
-                    'token': token}
+                    'token':token}
     raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Cannot login. Please Check Email and Password and try again"
-    )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot login. Please Check Email and Password and try again"
+        )
 
 
 @app.post('/logout')
@@ -105,8 +124,7 @@ def logout(token: str = Depends(get_token)):
 
 @app.get('/users', response_model=list[UserDbModel])
 def get_users(token: str = Depends(get_token)):
-    authcontext = check_role(token=token, roles=(
-        Role.ADMIN, Role.SUPER, Role.AUDITOR))
+    authcontext = check_role(token=token,roles=(Role.ADMIN, Role.SUPER, Role.AUDITOR))
     if authcontext.role == Role.SUPER:
         users = get_all_users()
         if users:
@@ -124,11 +142,15 @@ def get_users(token: str = Depends(get_token)):
 
 
 @app.get('/users/{userid}', response_model=UserDbModel)
-def get_users(userid: int, token: str = Depends(get_token)):
-    authcontext = check_role(token=token, roles=(
-        Role.ADMIN, Role.SUPER, Role.AUDITOR))
+def get_users(userid:int, token: str = Depends(get_token)):
+    authcontext = check_role(token=token,roles=(Role.ADMIN, Role.SUPER, Role.AUDITOR))
     if authcontext.role == Role.SUPER:
         user = get_user_by_id(userid)
+        if user: return user
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Not Found user of id :{userid}"
+            )
     elif authcontext.role in (Role.ADMIN, Role.AUDITOR):
         user = get_user_by_id(userid)
         if user and user.organization == authcontext.organization:
@@ -142,12 +164,12 @@ def get_users(userid: int, token: str = Depends(get_token)):
 
 @app.post('/users', response_model=UserDbModel)
 def add_user(user: UserDbModel, token: str = Depends(get_token)):
-    authcontext = check_role(token=token, roles=(Role.ADMIN, Role.SUPER))
-    check_used_email_pass(email=user.email, username=user.username)
+    authcontext = check_role(token=token,roles=(Role.ADMIN, Role.SUPER))
+    check_used_email_pass(email=user.email,username=user.username)
     user.id = None
     user.last_login = None
     user.create_at = datetime.now()
-
+    
     result = None
     if authcontext.role == Role.SUPER:
         result = create_user(user)
@@ -165,9 +187,8 @@ def add_user(user: UserDbModel, token: str = Depends(get_token)):
 
 
 @app.put('/users/{userid}', response_model=UserDbModel)
-def modify_user(userid: int, user: UserFormModel, token: str = Depends(get_token)):
-    authcontext = check_role(token=token, roles=(
-        Role.ADMIN, Role.SUPER, Role.AUDITOR, Role.PAID, Role.GUEST))
+def modify_user(userid:int, user:UserFormModel, token: str = Depends(get_token)):
+    authcontext = check_role(token=token,roles=(Role.ADMIN, Role.SUPER,Role.AUDITOR,Role.PAID,Role.GUEST))
     temp_user = dict()
     if user.username:
         temp_user['username'] = user.username
@@ -189,24 +210,22 @@ def modify_user(userid: int, user: UserFormModel, token: str = Depends(get_token
             temp_user['organization'] = user.organization
         if user.is_active and userid != authcontext.id:
             temp_user['is_active'] = user.is_active
-
+        
         check_updata_email_pass(temp_user)
-        u = update_user(userid, temp_user)
-        if u:
-            return u
-
+        u = update_user(userid,temp_user)
+        if u: return u
+        
     elif authcontext.role == Role.ADMIN:
         if user.role and userid != authcontext.id:
-            if user.role not in (Role.AUDITOR, Role.ADMIN):
+            if user.role not in (Role.AUDITOR,Role.ADMIN):
                 user.role = Role.AUDITOR
             temp_user['role'] = user.role
         if user.is_active and userid != authcontext.id:
             temp_user['is_active'] = user.is_active
         check_updata_email_pass(temp_user)
-        check_organization(userid, authcontext.organization)
-        u = update_user(userid, temp_user)
-        if u:
-            return u
+        check_organization(userid,authcontext.organization)
+        u = update_user(userid,temp_user)
+        if u: return u
     else:
         if userid != authcontext.id:
             raise HTTPException(
@@ -214,39 +233,37 @@ def modify_user(userid: int, user: UserFormModel, token: str = Depends(get_token
                 detail="Unauthorized"
             )
         check_updata_email_pass(temp_user)
-        u = update_user(userid, temp_user)
-        if u:
-            return u
+        u = update_user(userid,temp_user)
+        if u: return u
 
     raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
-    )
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
 
 
 @app.delete('/users/{userid}')
-def del_user(userid: int, token: str = Depends(get_token)):
-    authcontext = check_role(token=token, roles=(Role.ADMIN, Role.SUPER))
+def del_user(userid:int, token: str = Depends(get_token)):
+    authcontext = check_role(token=token,roles=(Role.ADMIN, Role.SUPER))
     if authcontext.role == Role.SUPER:
         if delete_user(userid):
-            return {'success': True}
-        return {'success': False}
-    elif authcontext.role == Role.ADMIN:
+            return {'success':True}
+        return {'success':False}
+    elif  authcontext.role == Role.ADMIN:
         if userid != authcontext.id and \
-                check_organization(userid, authcontext.organization):
+                    check_organization(userid, authcontext.organization):
             if delete_user(userid):
-                return {'success': True}
-            return {'success': False}
-
+                return {'success':True}
+            return {'success':False}
+        
     raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
-    )
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
 
-
-def check_role(token: str, roles: tuple | None, organiz: tuple | None = None):
-    result = authz(api_key='abc12345', token=token,
-                   roles=roles, organiz=organiz)
+        
+def check_role(token:str, roles:tuple|None, organiz:tuple|None = None):
+    result = authz(api_key='abc12345',token=token,roles=roles,organiz=organiz)
     if result:
         return result
     raise HTTPException(
@@ -255,8 +272,8 @@ def check_role(token: str, roles: tuple | None, organiz: tuple | None = None):
     )
 
 
-def check_login(token: str):
-    result = authn(api_key='abc12345', token=token)
+def check_login(token:str):
+    result = authn(api_key='abc12345',token=token)
     if result:
         return True
     raise HTTPException(
@@ -265,23 +282,23 @@ def check_login(token: str):
     )
 
 
-def check_updata_email_pass(temp: dict):
+def check_updata_email_pass(temp:dict):
     if 'email' in temp and 'username' in temp:
-        check_used_email_pass(temp['email'], temp['username'])
+        check_used_email_pass(temp['email'],temp['username'])
     elif 'email' in temp:
-        check_used_email_pass(temp['email'], None)
+        check_used_email_pass(temp['email'],None)
     elif 'username' in temp:
-        check_used_email_pass(None, temp['username'])
+        check_used_email_pass(None,temp['username'])
 
 
 if __name__ == "__main__":
     create_user(UserDbModel(username='alongkot',
-                            email='along@gmail.com',
-                            firstname='alongkot',
-                            lastname='chai',
-                            phonenumber='0839145961',
-                            password='123456789',
-                            role=Role.SUPER,
-                            organization='None',
-                            is_active=True))
+                       email='along@gmail.com',
+                       firstname='alongkot',
+                       lastname='chai',
+                       phonenumber='0839145961',
+                       password='123456789',
+                       role=Role.SUPER,
+                       organization='None',
+                       is_active=True))
     uvicorn.run(app, host="127.0.0.1", port=50501)
