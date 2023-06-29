@@ -19,7 +19,13 @@ app = FastAPI()
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return JSONResponse({'detail': exc.errors()[0]['loc'][-1]+','+exc.errors()[0]['msg']},
+    detail = ""
+    try:
+        detail = exc.errors()[0]['loc'][-1]+','+exc.errors()[0]['msg']
+    except Exception as e:
+        print(e)
+        detail = str(exc.errors())
+    return JSONResponse({'detail': detail},
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
@@ -314,4 +320,4 @@ if __name__ == "__main__":
                             role=Role.SUPER,
                             organization='None',
                             is_active=True))
-    uvicorn.run(app, host="127.0.0.1", port=50501)
+    uvicorn.run(app, host="0.0.0.0", port=50501)
