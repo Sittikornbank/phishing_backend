@@ -255,8 +255,8 @@ def modify_user(userid: int, user: UserFormModel, token: str = Depends(get_token
             return u
 
     raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Not Found"
     )
 
 
