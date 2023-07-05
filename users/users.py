@@ -123,7 +123,6 @@ def login(u: UserLoginModel):
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Cannot login. Please Check Email and Password and try again"
     )
-# test 1
 
 
 @app.post('/logout')
@@ -131,6 +130,28 @@ def logout(token: str = Depends(get_token)):
     if check_login(token) and remove_session_by_token(token):
         return {'success': True}
     return {'success': False}
+
+
+@app.get('/me')
+def about_me(token: str = Depends(get_token)):
+    authcontext = check_role(token=token, roles=(
+        Role.GUEST, Role.PAID, Role.ADMIN, Role.SUPER, Role.AUDITOR))
+    user = get_user_by_id(authcontext.id)
+    if user:
+        return {'username': user.username,
+                'email': user.email,
+                'firstname': user.firstname,
+                'lastname': user.lastname,
+                'phonenumber': user.phonenumber,
+                'organization': user.organization,
+                'role': user.role,
+                'last_login': user.last_login,
+                'create_at': user.create_at}
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Unauthorized"
+    )
 
 
 @app.get('/users', response_model=list[UserDbModel])
