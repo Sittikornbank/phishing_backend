@@ -3,7 +3,8 @@ from datetime import datetime
 from fastapi import Request, FastAPI, status, HTTPException, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from schemas import UserCreateModel, UserFormModel, UserLoginModel, UserDbModel, Role
+from schemas import (UserCreateModel, UserFormModel, UserLoginModel,
+                     UserDbModel, Role, UserListModel)
 from models import (engine, create_user, get_all_users,
                     get_user_by_organize, Base, update_last_login,
                     get_user_by_id, update_user, delete_user)
@@ -154,24 +155,30 @@ def about_me(token: str = Depends(get_token)):
     )
 
 
-@app.get('/users', response_model=list[UserDbModel])
-def get_users(token: str = Depends(get_token)):
+@app.get('/users', response_model=UserListModel)
+def get_users(token: str = Depends(get_token), page: int | None = None, limit: int | None = None):
     authcontext = check_role(token=token, roles=(
         Role.ADMIN, Role.SUPER, Role.AUDITOR))
+    if page and page < 0:
+        page = 1
+    if limit and limit < 1:
+        limit = 25
+    user = None
     if authcontext.role == Role.SUPER:
-        users = get_all_users()
-        if users:
-            return users
-        return list()
+        user = get_all_users(page, limit)
     elif authcontext.role in (Role.ADMIN, Role.AUDITOR):
-        users = get_user_by_organize(authcontext.organization)
-        if users:
-            return users
-        return list()
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
-    )
+        user = get_user_by_organize(authcontext.organization, page, limit)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+    if user and 'users' in user:
+        return UserListModel(count=user['count'], page=user['page'],
+                             last_page=(user['count']//user['limit'])+1,
+                             limit=user['limit'],
+                             users=user['users'])
+    return UserListModel()
 
 
 @app.get('/users/{userid}', response_model=UserDbModel)

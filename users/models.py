@@ -39,10 +39,52 @@ def get_db():
         db.close()
 
 
-def get_all_users():
+def get_all_users(page: int | None = None, size: int | None = None):
     db: Session = next(get_db())
     try:
-        return db.query(User).all()
+        if not page and not size:
+            users = db.query(User).all()
+            return {'users': users, 'count': len(users), 'page': 1, 'limit': len(users)}
+
+        if page and not size:
+            size = 25
+        elif not page and size:
+            page = 1
+        if page < 0:
+            page = 1
+        if size < 0:
+            size = 25
+        count = db.query(User).count()
+        users = db.query(User).limit(size).offset(size*(page-1)).all()
+        return {'users': users, 'count': count, 'page': page, 'limit': size}
+
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_user_by_organize(organiz: str, page: int | None = None, size: int | None = None):
+    db: Session = next(get_db())
+    if organiz == 'None':
+        return
+    try:
+        if not page and not size:
+            users = db.query(User).filter(User.organization == organiz).all()
+            return {'users': users, 'count': len(users), 'page': 1, 'limit': len(users)}
+
+        if page and not size:
+            size = 25
+        elif not page and size:
+            page = 1
+        if page < 0:
+            page = 1
+        if size < 0:
+            size = 25
+        count = db.query(User).filter(User.organization == organiz).count()
+        users = db.query(User).filter(User.organization == organiz).limit(
+            size).offset(size*(page-1)).all()
+        return {'users': users, 'count': count, 'page': page, 'limit': size}
+
     except Exception as e:
         print(e)
     return
@@ -70,17 +112,6 @@ def check_email_username_inuse(email: str, username: str):
             if temp:
                 result['username'] = True
         return result
-    except Exception as e:
-        print(e)
-    return
-
-
-def get_user_by_organize(organiz: str):
-    db: Session = next(get_db())
-    if organiz == 'None':
-        return
-    try:
-        return db.query(User).filter(User.organization == organiz).all()
     except Exception as e:
         print(e)
     return

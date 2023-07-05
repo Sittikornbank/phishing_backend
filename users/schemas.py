@@ -63,3 +63,11 @@ class UserDbModel(UserCreateModel):
 
     class Config:
         orm_mode = True
+
+
+class UserListModel(BaseModel):
+    count: int = 0
+    page: int = 1
+    last_page: int = 1
+    limit: int = 25
+    users: list[UserDbModel] = []
