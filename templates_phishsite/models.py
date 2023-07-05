@@ -6,53 +6,43 @@ from schemas import Visible
 from datetime import datetime
 
 
-DATABASE_URL = "mysql+pymysql://root@192.168.2.51/api?charset=utf8mb4"
+DATABASE_URL = "mysql+pymysql://root@127.0.0.1/api?charset=utf8mb4"
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    username = Column(String(64), unique=True, nullable=False)
-    email = Column(String(64), unique=True, nullable=False)
-    password = Column(String(2048), nullable=False)
-    firstname = Column(String(64), nullable=False)
-    lastname = Column(String(64), nullable=False)
-    phonenumber = Column(String(64))
-    role = Column(String(64), default='guest', nullable=False)
-    organization = Column(String(64))
-    last_login = Column(String(64), default=None)
-    create_at = Column(String(64), default=str(datetime.now()))
-    is_active = Column(Boolean, default=True)
-
-
 class SiteTemplate(Base):
-    __tablename__ = "phishsite_templates"
+    __tablename__ = "site_templates"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    name = Column(String(256))
+    id = Column(Integer, primary_key=True, index=True,
+                autoincrement=True, unique=True)
+    name = Column(String(256), nullable=False)
     html = Column(Text, default="")
     capture_credentials = Column(Boolean, default=False)
     capture_passwords = Column(Boolean, default=False)
     modified_date = Column(String(64))
+    create_at = Column(String(64), default=str(datetime.now()))
     visible = Column(String(32), default=Visible.NONE)
+    owner_id = Column(Integer, default=None)
+    organize_id = Column(Integer, default=None)
 
 
-class MailTemplate(Base):
+class EmailTemplate(Base):
     __tablename__ = "email_templates"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    name = Column(String(256))
-    envelope_sender = Column(String(256))
+    name = Column(String(256), nullable=False)
+    envelope_sender = Column(String(256), default="")
     subject = Column(String(512), default="")
     html = Column(Text, default="")
     attachments = Column(String(512), default="")
     modified_date = Column(String(64))
+    create_at = Column(String(64), default=str(datetime.now()))
     visible = Column(String(32), default=Visible.NONE)
+    owner_id = Column(Integer, default=None)
+    organize_id = Column(Integer, default=None)
 
 
 def get_db():
@@ -63,116 +53,123 @@ def get_db():
         db.close()
 
 
-def get_all_users():
+def get_all_email_templates():
     db: Session = next(get_db())
     try:
-        return db.query(User).all()
+        return db.query(EmailTemplate).all()
     except Exception as e:
         print(e)
     return
 
 
-def get_user_by_id(id: int):
+def get_all_site_templates():
     db: Session = next(get_db())
     try:
-        return db.query(User).filter(User.id == id).first()
+        return db.query(SiteTemplate).all()
     except Exception as e:
         print(e)
     return
 
 
-def check_email_username_inuse(email: str, username: str):
+def get_email_template_by_id(id: int):
     db: Session = next(get_db())
-    result = {'email': False, 'username': False}
     try:
-        if email:
-            temp = db.query(User).filter(User.email == email).first()
-            if temp:
-                result['email'] = True
-        if username:
-            temp = db.query(User).filter(User.username == username).first()
-            if temp:
-                result['username'] = True
-        return result
+        return db.query(EmailTemplate).filter(EmailTemplate.id == id).first()
     except Exception as e:
         print(e)
     return
 
 
-def get_user_by_organize(organiz: str):
+def get_site_template_by_id(id: int):
     db: Session = next(get_db())
-    if organiz == 'None':
-        return
     try:
-        return db.query(User).filter(User.organization == organiz).all()
+        return db.query(SiteTemplate).filter(SiteTemplate.id == id).first()
     except Exception as e:
         print(e)
     return
 
 
-def create_user(user_in: UserDbModel):
+def get_email_template_by_owner(owner: int):
     db: Session = next(get_db())
     try:
-        user = User(username=user_in.username,
-                    email=user_in.email,
-                    firstname=user_in.firstname,
-                    lastname=user_in.lastname,
-                    password=user_in.password,
-                    role=user_in.role.value,
-                    organization=user_in.organization,
-                    phonenumber=user_in.phonenumber)
-        user.password = (bcrypt.hashpw(user.password.encode(
-            'utf-8'), bcrypt.gensalt())).decode('utf-8')
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return user
+        return db.query(EmailTemplate).filter(EmailTemplate.owner_id == owner).all()
     except Exception as e:
         print(e)
     return
 
 
-def get_user_by_email(email: str):
+def get_site_template_by_owner(owner: int):
     db: Session = next(get_db())
     try:
-        return db.query(User).filter(User.email == email).first()
+        return db.query(SiteTemplate).filter(SiteTemplate.owner_id == owner).all()
     except Exception as e:
         print(e)
     return
 
 
-def update_user(id: int, user_in: dict):
-    db: Session = next(get_db())
-    try:
-        if 'password' in user_in:
-            user_in['password'] = (bcrypt.hashpw(user_in['password'].encode(
-                'utf-8'), bcrypt.gensalt())).decode('utf-8')
-        db.query(User).filter(User.id == id).update(user_in)
-        db.commit()
-        return get_user_by_id(id)
-    except Exception as e:
-        print(e)
-    return
+# def create_user(user_in: UserDbModel):
+#     db: Session = next(get_db())
+#     try:
+#         user = User(username=user_in.username,
+#                     email=user_in.email,
+#                     firstname=user_in.firstname,
+#                     lastname=user_in.lastname,
+#                     password=user_in.password,
+#                     role=user_in.role.value,
+#                     organization=user_in.organization,
+#                     phonenumber=user_in.phonenumber)
+#         user.password = (bcrypt.hashpw(user.password.encode(
+#             'utf-8'), bcrypt.gensalt())).decode('utf-8')
+#         db.add(user)
+#         db.commit()
+#         db.refresh(user)
+#         return user
+#     except Exception as e:
+#         print(e)
+#     return
 
 
-def update_last_login(id: int):
-    db: Session = next(get_db())
-    try:
-        db.query(User).filter(User.id == id).update(
-            {'last_login': str(datetime.now())})
-        db.commit()
-        return True
-    except Exception as e:
-        print(e)
-    return
+# def get_user_by_email(email: str):
+#     db: Session = next(get_db())
+#     try:
+#         return db.query(User).filter(User.email == email).first()
+#     except Exception as e:
+#         print(e)
+#     return
 
 
-def delete_user(id: int):
-    db: Session = next(get_db())
-    try:
-        db.query(User).filter(User.id == id).delete()
-        db.commit()
-        return True
-    except Exception as e:
-        print(e)
-    return
+# def update_user(id: int, user_in: dict):
+#     db: Session = next(get_db())
+#     try:
+#         if 'password' in user_in:
+#             user_in['password'] = (bcrypt.hashpw(user_in['password'].encode(
+#                 'utf-8'), bcrypt.gensalt())).decode('utf-8')
+#         db.query(User).filter(User.id == id).update(user_in)
+#         db.commit()
+#         return get_user_by_id(id)
+#     except Exception as e:
+#         print(e)
+#     return
+
+
+# def update_last_login(id: int):
+#     db: Session = next(get_db())
+#     try:
+#         db.query(User).filter(User.id == id).update(
+#             {'last_login': str(datetime.now())})
+#         db.commit()
+#         return True
+#     except Exception as e:
+#         print(e)
+#     return
+
+
+# def delete_user(id: int):
+#     db: Session = next(get_db())
+#     try:
+#         db.query(User).filter(User.id == id).delete()
+#         db.commit()
+#         return True
+#     except Exception as e:
+#         print(e)
+#     return
