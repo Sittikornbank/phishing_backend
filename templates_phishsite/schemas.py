@@ -31,7 +31,7 @@ class ParentModel(BaseModel):
     create_at: datetime = datetime.now()
     visible: Visible = Visible.NONE
     owner_id: int | None = None
-    organize_id: int | None = None
+    org_id: int | None = None
 
 
 class TemplateModel(ParentModel):
@@ -44,6 +44,7 @@ class SiteModel(ParentModel):
     html: str = ""
     capture_credentials: bool = False
     capture_passwords: bool = False
+    redirect_url: str = ""
 
 
 class EmailModel(ParentModel):
@@ -58,11 +59,12 @@ class SiteFormModel(SiteModel):
     html: str | None = None
     capture_credentials: bool | None = None
     capture_passwords: bool | None = None
+    redirect_url: str | None = None
     modified_date: datetime | None = None
     create_at: datetime | None = None
     visible: Visible | None = None
     owner_id: int | None = None
-    organize_id: int | None = None
+    org_id: int | None = None
 
 
 class EmailFormModel(EmailModel):
@@ -75,7 +77,7 @@ class EmailFormModel(EmailModel):
     create_at: datetime | None = None
     visible: Visible | None = None
     owner_id: int | None = None
-    organize_id: int | None = None
+    org_id: int | None = None
 
 
 class TemplateFromModel(TemplateModel):
@@ -84,7 +86,7 @@ class TemplateFromModel(TemplateModel):
     create_at: datetime | None = None
     visible: Visible | None = None
     owner_id: int | None = None
-    organize_id: int | None = None
+    org_id: int | None = None
     description: str | None = None
     site_template: int | None = None
     mail_template: int | None = None
@@ -94,6 +96,7 @@ class SiteDisplayModel(BaseModel):
     id: int | None = None
     name: str | None = None
     html: str | None = None
+    redirect_url: str | None = None
 
     class Config:
         orm_mode = True
@@ -121,7 +124,7 @@ class TemplateDisplayModel(BaseModel):
     create_at: datetime = datetime.now()
     visible: Visible = Visible.NONE
     owner_id: int | None = None
-    organize_id: int | None = None
+    org_id: int | None = None
 
     class Config:
         orm_mode = True

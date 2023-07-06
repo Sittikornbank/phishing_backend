@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text
-from sqlalchemy import create_engine
+from sqlalchemy import (Column, Integer, String, Boolean,
+                        Text, create_engine, ForeignKey)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from schemas import Visible
+from schemas import Visible, EmailModel, SiteModel
 from datetime import datetime
 
 
@@ -22,11 +22,12 @@ class SiteTemplate(Base):
     html = Column(Text, default="")
     capture_credentials = Column(Boolean, default=False)
     capture_passwords = Column(Boolean, default=False)
+    redirect_url = Column(Text, default="")
     modified_date = Column(String(64))
     create_at = Column(String(64), default=str(datetime.now()))
     visible = Column(String(32), default=Visible.NONE)
     owner_id = Column(Integer, default=None)
-    organize_id = Column(Integer, default=None)
+    org_id = Column(Integer, default=None)
 
 
 class EmailTemplate(Base):
@@ -42,7 +43,27 @@ class EmailTemplate(Base):
     create_at = Column(String(64), default=str(datetime.now()))
     visible = Column(String(32), default=Visible.NONE)
     owner_id = Column(Integer, default=None)
-    organize_id = Column(Integer, default=None)
+    org_id = Column(Integer, default=None)
+
+
+class Template(Base):
+    __tablename__ = "templates"
+
+    id = Column(Integer, primary_key=True, index=True,
+                autoincrement=True, unique=True)
+    name = Column(String(256), nullable=False)
+    description = Column(Text, default="")
+    site_template = Column(Integer,
+                           ForeignKey('site_templates.id',
+                                      ondelete='SET NULL',))
+    mail_template = Column(Integer,
+                           ForeignKey('email_templates.id',
+                                      ondelete='SET NULL',))
+    modified_date = Column(String(64))
+    create_at = Column(String(64), default=str(datetime.now()))
+    visible = Column(String(32), default=Visible.NONE)
+    owner_id = Column(Integer, default=None)
+    org_id = Column(Integer, default=None)
 
 
 def get_db():
@@ -107,69 +128,114 @@ def get_site_template_by_owner(owner: int):
     return
 
 
-# def create_user(user_in: UserDbModel):
-#     db: Session = next(get_db())
-#     try:
-#         user = User(username=user_in.username,
-#                     email=user_in.email,
-#                     firstname=user_in.firstname,
-#                     lastname=user_in.lastname,
-#                     password=user_in.password,
-#                     role=user_in.role.value,
-#                     organization=user_in.organization,
-#                     phonenumber=user_in.phonenumber)
-#         user.password = (bcrypt.hashpw(user.password.encode(
-#             'utf-8'), bcrypt.gensalt())).decode('utf-8')
-#         db.add(user)
-#         db.commit()
-#         db.refresh(user)
-#         return user
-#     except Exception as e:
-#         print(e)
-#     return
+def get_email_template_by_org(org: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(EmailTemplate).filter(EmailTemplate.org_id == org).all()
+    except Exception as e:
+        print(e)
+    return
 
 
-# def get_user_by_email(email: str):
-#     db: Session = next(get_db())
-#     try:
-#         return db.query(User).filter(User.email == email).first()
-#     except Exception as e:
-#         print(e)
-#     return
+def get_site_template_by_org(org: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(SiteTemplate).filter(SiteTemplate.org_id == org).all()
+    except Exception as e:
+        print(e)
+    return
 
 
-# def update_user(id: int, user_in: dict):
-#     db: Session = next(get_db())
-#     try:
-#         if 'password' in user_in:
-#             user_in['password'] = (bcrypt.hashpw(user_in['password'].encode(
-#                 'utf-8'), bcrypt.gensalt())).decode('utf-8')
-#         db.query(User).filter(User.id == id).update(user_in)
-#         db.commit()
-#         return get_user_by_id(id)
-#     except Exception as e:
-#         print(e)
-#     return
+def create_email_template(temp: EmailModel):
+    db: Session = next(get_db())
+    try:
+        temp = EmailTemplate(
+            name=temp.name,
+            html=temp.html,
+            envelope_sender=temp.envelope_sender,
+            subject=temp.subject,
+            attachments=temp.attachments,
+            modified_date=temp.create_at,
+            create_at=temp.create_at,
+            visible=temp.visible,
+            owner_id=temp.owner_id,
+            org_id=temp.org_id
+        )
+        db.add(temp)
+        db.commit()
+        db.refresh(temp)
+        return temp
+    except Exception as e:
+        print(e)
+    return
 
 
-# def update_last_login(id: int):
-#     db: Session = next(get_db())
-#     try:
-#         db.query(User).filter(User.id == id).update(
-#             {'last_login': str(datetime.now())})
-#         db.commit()
-#         return True
-#     except Exception as e:
-#         print(e)
-#     return
+def create_site_template(temp: SiteModel):
+    db: Session = next(get_db())
+    try:
+        temp = EmailTemplate(
+            name=temp.name,
+            html=temp.html,
+            capture_credentials=temp.capture_credentials,
+            capture_passwords=temp.capture_passwords,
+            redirect_url=temp.redirect_url,
+            modified_date=temp.create_at,
+            create_at=temp.create_at,
+            visible=temp.visible,
+            owner_id=temp.owner_id,
+            org_id=temp.org_id
+        )
+        db.add(temp)
+        db.commit()
+        db.refresh(temp)
+        return temp
+    except Exception as e:
+        print(e)
+    return
 
 
-# def delete_user(id: int):
-#     db: Session = next(get_db())
-#     try:
-#         db.query(User).filter(User.id == id).delete()
-#         db.commit()
-#         return True
-#     except Exception as e:
-#         print(e)
-#     return
+def update_email_temp(id: int, temp_in: dict):
+    db: Session = next(get_db())
+    try:
+        if temp_in:
+            temp_in['modified_date'] = str(datetime.now())
+            db.query(EmailTemplate).filter(
+                EmailTemplate.id == id).update(temp_in)
+            db.commit()
+            return get_email_template_by_id(id)
+    except Exception as e:
+        print(e)
+    return
+
+
+def update_site_temp(id: int, temp_in: dict):
+    db: Session = next(get_db())
+    try:
+        db.query(SiteTemplate).filter(SiteTemplate.id == id).update(temp_in)
+        db.commit()
+        return get_site_template_by_id(id)
+    except Exception as e:
+        print(e)
+    return
+
+
+def delete_email_temp(id: int):
+    db: Session = next(get_db())
+    try:
+        db.query(EmailTemplate).filter(EmailTemplate.id == id).delete()
+        db.commit()
+        return True
+    except Exception as e:
+        print(e)
+    return
+
+
+def delete_site_temp(id: int):
+    db: Session = next(get_db())
+    try:
+        db.query(SiteTemplate).filter(SiteTemplate.id == id).delete()
+        db.commit()
+        return True
+    except Exception as e:
+        print(e)
+    return
