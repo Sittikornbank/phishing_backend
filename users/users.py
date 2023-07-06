@@ -102,14 +102,19 @@ def register(u: UserCreateModel):
 
 @app.post('/login')
 def login(u: UserLoginModel):
-    user = check_email_password(u.email, u.password)
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
     if not (re.fullmatch(regex, u.email)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="invalid email format"
         )
+    user = check_email_password(u.email, u.password)
     if user:
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="account is not activated"
+            )
         token = add_session(user)
         if token:
             update_last_login(user.id)

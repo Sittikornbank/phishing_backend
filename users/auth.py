@@ -40,7 +40,7 @@ def authn(api_key: str, token: str):
     if token in sessions:
         try:
             user = get_user_by_id(sessions[token].id)
-            if user:
+            if user and user.is_active:
                 return AuthContext(id=user.id, role=user.role, organization=user.organization)
         except Exception as e:
             print(e)
@@ -54,7 +54,7 @@ def authz(api_key: str, token: str, roles: tuple[str] | None, organiz: tuple[str
         try:
             access = False
             user = get_user_by_id(sessions[token].id)
-            if user:
+            if user.is_active:
                 if (roles and user.role in roles) or not roles:
                     access = True
                 else:
