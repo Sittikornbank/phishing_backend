@@ -1,13 +1,16 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from schemas import UserDbModel
 from datetime import datetime
+from dotenv import load_dotenv
 import bcrypt
+import os
 
 
-DATABASE_URL = "mysql+pymysql://root@127.0.0.1/api?charset=utf8mb4"
+load_dotenv()
+DATABASE_URL = os.getenv('DATABASE_URI')
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -26,8 +29,8 @@ class User(Base):
     phonenumber = Column(String(64))
     role = Column(String(64), default='guest', nullable=False)
     organization = Column(String(256))
-    last_login = Column(String(64), default=None)
-    create_at = Column(String(64), default=str(datetime.now()))
+    last_login = Column(DateTime())
+    create_at = Column(DateTime(), default=datetime.now())
     is_active = Column(Boolean, default=True)
 
 
@@ -167,7 +170,7 @@ def update_last_login(id: int):
     db: Session = next(get_db())
     try:
         db.query(User).filter(User.id == id).update(
-            {'last_login': str(datetime.now())})
+            {'last_login': datetime.now()})
         db.commit()
         return True
     except Exception as e:

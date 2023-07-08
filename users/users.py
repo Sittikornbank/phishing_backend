@@ -10,9 +10,12 @@ from models import (engine, create_user, get_all_users,
                     get_user_by_id, update_user, delete_user)
 from auth import (get_token, authn, authz, add_session, remove_session_by_token,
                   check_email_password, check_used_email_pass, check_organization)
+from dotenv import load_dotenv
 import re
+import os
 
 
+load_dotenv()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -353,4 +356,4 @@ if __name__ == "__main__":
                             role=Role.SUPER,
                             organization='None',
                             is_active=True))
-    uvicorn.run(app, host="0.0.0.0", port=50501)
+    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
