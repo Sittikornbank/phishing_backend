@@ -31,7 +31,7 @@ class User(Base):
     organization = Column(String(256))
     last_login = Column(DateTime())
     create_at = Column(DateTime(), default=datetime.now())
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
 
 
 def get_db():
@@ -131,7 +131,8 @@ def create_user(user_in: UserDbModel):
                     role=user_in.role.value,
                     organization=user_in.organization,
                     phonenumber=user_in.phonenumber,
-                    create_at=user_in.create_at)
+                    create_at=user_in.create_at,
+                    is_active=user_in.is_active)
         user.password = (bcrypt.hashpw(user.password.encode(
             'utf-8'), bcrypt.gensalt())).decode('utf-8')
         db.add(user)

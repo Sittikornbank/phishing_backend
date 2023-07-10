@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import re
 import os
 
+import verify
 
 load_dotenv()
 Base.metadata.create_all(bind=engine)
@@ -95,8 +96,9 @@ def register(u: UserCreateModel):
                        role=Role.GUEST,
                        organization='None',
                        create_at=datetime.now(),
-                       is_active=True)
+                       is_active=False)
     u = create_user(user)
+    verify.send_verify_email(to_email=u.email, user_id=u.id)
     if u:
         return {
             'username': u.username,
@@ -353,6 +355,17 @@ def check_updata_email_pass(temp: dict):
         check_used_email_pass(temp['email'], None)
     elif 'username' in temp:
         check_used_email_pass(None, temp['username'])
+
+
+@app.get('/verify')
+def verification(code: str):
+    # a = verify.create_verify_token(10)
+    try:
+        b = verify.read__verify_token(code)
+        u = update_user(b['user_id'], {'is_active': True})
+        return {'verify_success': u != None}
+    except:
+        return {'verify_success': False}
 
 
 if __name__ == "__main__":
