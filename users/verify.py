@@ -1,36 +1,35 @@
 import jwt
 import os
 from dotenv import load_dotenv
-from datetime import datetime
-import time
+from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
-secret = os.getenv("VERIFY_SECRET")
+SECRET = os.getenv("VERIFY_SECRET")
+EXPIRE_HOURS = os.getenv("VERIFY_EMAIL_EXPIRE_HOURS")
 
 
 def create_verify_token(user_id: int):
-    return jwt.encode({"user_id": user_id, "create_at": int(time.time())}, secret, algorithm="HS256")
-    # print(encoded_jwt)
+    return jwt.encode({"user_id": user_id,
+                       "exp": datetime.utcnow() + timedelta(hours=EXPIRE_HOURS)},
+                      SECRET, algorithm="HS256")
 
 
 def read__verify_token(token: str):
-    data = jwt.decode(token, secret, algorithms=["HS256"])
-    create_at = data['create_at']
-    if (int(time.time()) - create_at) < 3600:
-        return data
-    return
+    return jwt.decode(token, SECRET, algorithms=["HS256"])
 
 
 def send_verify_email(to_email: str, user_id: int):
-    verification_email = create_verify_token(user_id)
+    verification_token = create_verify_token(user_id)
     # กำหนดข้อมูลการส่งอีเมล (ผู้ส่ง, ผู้รับ, หัวข้อ, ข้อความ)
-    from_email = 'tummainorrr.com'
+    from_email = '<noreply>@tummainorrr.com'
     subject = 'Verification Email'
-    message = f'Your verification code : http://127.0.0.1:50501/verify?code={verification_email}'
+    message = 'Thank you for singed up to our service.\n' + \
+        f'Click here to verify your Email: http://127.0.0.1:50501/verify?code={verification_token}' + \
+        f'\nPlease verify your email within {EXPIRE_HOURS} hour(s).'
 
     # สร้างอีเมล
     msg = MIMEMultipart()
@@ -44,8 +43,8 @@ def send_verify_email(to_email: str, user_id: int):
     # ส่งอีเมล
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
-    username = 'tummainorrr@gmail.com'
-    password = 'haqyzvueeatcgovh'
+    username = os.getenv('VERIFY_EMAIL_USERNAME')
+    password = os.getenv('VERIFY_EMAIL_PASSWORD')
     with smtplib.SMTP(smtp_server, smtp_port) as server:
         server.starttls()
         server.login(username, password)
