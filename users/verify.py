@@ -9,20 +9,21 @@ from email.mime.multipart import MIMEMultipart
 load_dotenv()
 
 SECRET = os.getenv("VERIFY_SECRET")
-EXPIRE_VERIFY = os.getenv("VERIFY_EMAIL_EXPIRE_HOURS")
-EXPIRE_FACTOR = os.getenv("VERIFY_EMAIL_EXPIRE_MINUTES")
+EXPIRE_VERIFY = int(os.getenv("VERIFY_EMAIL_EXPIRE_HOURS"))
+EXPIRE_FACTOR = int(os.getenv("VERIFY_EMAIL_EXPIRE_MINUTES"))
+is_send_email = bool(os.getenv("IS_SEND_EMAIL"))
 
 
 def create_verify_token(user_id: int):
     return jwt.encode({"user_id": user_id,
-                       "exp": datetime.utcnow() + timedelta(hours=int(EXPIRE_VERIFY))},
+                       "exp": datetime.utcnow() + timedelta(hours=EXPIRE_VERIFY)},
                       SECRET, algorithm="HS256")
 
 
 def create_two_factor_token(user_id: int, timestamp: float):
     return jwt.encode({"uid": user_id,
                        "timestamp": timestamp,
-                       "exp": datetime.utcnow() + timedelta(minutes=int(EXPIRE_FACTOR))},
+                       "exp": datetime.utcnow() + timedelta(minutes=EXPIRE_FACTOR)},
                       SECRET, algorithm="HS256")
 
 
@@ -53,14 +54,15 @@ def send_verify_email(to_email: str, user_id: int):
     smtp_port = 587
     username = os.getenv('VERIFY_EMAIL_USERNAME')
     password = os.getenv('VERIFY_EMAIL_PASSWORD')
-    # with smtplib.SMTP(smtp_server, smtp_port) as server:
-    #     server.starttls()
-    #     server.login(username, password)
-    #     server.sendmail(from_email, to_email, msg.as_string())
+    if not is_send_email:
+        return
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(username, password)
+        server.sendmail(from_email, to_email, msg.as_string())
 
 
 def send_two_factor_email(to_email: str, tid: str, time: datetime):
-    print(tid, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
     # กำหนดข้อมูลการส่งอีเมล (ผู้ส่ง, ผู้รับ, หัวข้อ, ข้อความ)
     from_email = '<noreply>@tummainorrr.com'
     subject = 'Code for Login'
@@ -82,7 +84,9 @@ def send_two_factor_email(to_email: str, tid: str, time: datetime):
     smtp_port = 587
     username = os.getenv('VERIFY_EMAIL_USERNAME')
     password = os.getenv('VERIFY_EMAIL_PASSWORD')
-    # with smtplib.SMTP(smtp_server, smtp_port) as server:
-    #     server.starttls()
-    #     server.login(username, password)
-    #     server.sendmail(from_email, to_email, msg.as_string())
+    if not is_send_email:
+        return
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(username, password)
+        server.sendmail(from_email, to_email, msg.as_string())
