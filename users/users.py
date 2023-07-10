@@ -11,6 +11,7 @@ from models import (engine, create_user, get_all_users,
 from auth import (get_token, authn, authz, add_session, remove_session_by_token,
                   check_email_password, check_used_email_pass, check_organization)
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 import re
 import os
 
@@ -19,6 +20,14 @@ load_dotenv()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(RequestValidationError)
