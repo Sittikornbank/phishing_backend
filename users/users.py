@@ -179,27 +179,29 @@ def login_tf(u: UserLoginModel):
 
 @app.post('/twofactor')
 async def two_factor(req: Request):
-    body = await req.json()
-    data = verify.read_verify_token(body['ref_token'])
-    valid = validate_email_factor_code(
-        user_id=data['uid'], tid=body['code'], time=data['timestamp'])
-    user = get_user_by_id(data['uid'])
-    if valid and user:
-        token = add_session(user)
-        if token:
-            update_last_login(user.id)
-            return {'username': user.username,
-                    'email': user.email,
-                    'firstname': user.firstname,
-                    'lastname': user.lastname,
-                    'organization': user.organization,
-                    'role': user.role,
-                    'token': token}
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
-    )
+    try:
+        body = await req.json()
+        data = verify.read_verify_token(body['ref_token'])
+        valid = validate_email_factor_code(
+            user_id=data['uid'], tid=body['code'], time=data['timestamp'])
+        user = get_user_by_id(data['uid'])
+        if valid and user:
+            token = add_session(user)
+            if token:
+                update_last_login(user.id)
+                return {'username': user.username,
+                        'email': user.email,
+                        'firstname': user.firstname,
+                        'lastname': user.lastname,
+                        'organization': user.organization,
+                        'role': user.role,
+                        'token': token}
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
 
 
 @app.post('/logout')
