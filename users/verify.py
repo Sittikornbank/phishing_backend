@@ -30,7 +30,7 @@ def send_verify_email(to_email: str, user_id: int):
     # กำหนดข้อมูลการส่งอีเมล (ผู้ส่ง, ผู้รับ, หัวข้อ, ข้อความ)
     from_email = 'tummainorrr.com'
     subject = 'Verification Email'
-    message = f'Your verification code : http://127.0.0.1:50501/verify?code={verification_email}'
+    message = f'Your verification email : http://127.0.0.1:50501/verify?code={verification_email}'
 
     # สร้างอีเมล
     msg = MIMEMultipart()
