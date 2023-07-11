@@ -3,11 +3,14 @@ from pydantic import BaseModel
 from fastapi import status, HTTPException, Request
 from schemas import Role, Session, AuthContext
 from models import get_user_by_id, get_user_by_email, User, check_email_username_inuse
+from random import choices
 import uuid
 
 INTERNAL_API_KEY = "abc12345"
 sessions: dict[str, Session] = dict()
 sessions_reverse: dict[int, str] = dict()
+
+two_fac_email_codes: dict[int, tuple[str, float]] = dict()
 
 
 def get_token(req: Request):
@@ -159,3 +162,18 @@ def check_used_email_pass(email: str, username: str):
 def check_organization(userid: int, organiz: str):
     user = get_user_by_id(userid)
     return user and user.organization == organiz
+
+
+def add_email_factor_code(user_id: int, timestamp: float):
+    global two_fac_email_codes
+    tid = ''.join(choices('abcdefghijklmnopqrstuvwxyz0123456789', k=5))
+    two_fac_email_codes[user_id] = (tid, timestamp)
+    return tid
+
+
+def validate_email_factor_code(user_id: int, tid: str, time: float):
+    global two_fac_email_codes
+    if user_id in two_fac_email_codes:
+        temp = two_fac_email_codes[user_id]
+        return temp[0] == tid and temp[1] == time
+    return False
