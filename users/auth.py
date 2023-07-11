@@ -177,3 +177,11 @@ def validate_email_factor_code(user_id: int, tid: str, time: float):
         temp = two_fac_email_codes[user_id]
         return temp[0] == tid and temp[1] == time
     return False
+
+
+def remove_email_factor_code(user_id: int):
+    global two_fac_email_codes
+    if user_id in two_fac_email_codes:
+        two_fac_email_codes.pop(user_id)
+        return True
+    return False

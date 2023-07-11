@@ -10,7 +10,7 @@ from models import (engine, create_user, get_all_users,
                     get_user_by_id, update_user, delete_user)
 from auth import (get_token, authn, authz, add_session, remove_session_by_token,
                   check_email_password, check_used_email_pass, check_organization,
-                  add_email_factor_code, validate_email_factor_code)
+                  add_email_factor_code, validate_email_factor_code, remove_email_factor_code)
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import re
@@ -188,6 +188,7 @@ async def two_factor(req: Request):
         if valid and user:
             token = add_session(user)
             if token:
+                remove_email_factor_code(user.id)
                 update_last_login(user.id)
                 return {'username': user.username,
                         'email': user.email,
@@ -202,6 +203,10 @@ async def two_factor(req: Request):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized"
         )
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid code can't login"
+    )
 
 
 @app.post('/logout')
