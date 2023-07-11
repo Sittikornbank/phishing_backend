@@ -10,7 +10,7 @@ from models import (engine, create_user, get_all_users,
                     get_user_by_id, update_user, delete_user)
 from auth import (get_token, authn, authz, add_session, remove_session_by_token,
                   check_email_password, check_used_email_pass, check_organization,
-                  add_email_factor_code, validate_email_factor_code)
+                  add_email_factor_code, validate_email_factor_code, remove_email_factor_code)
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import re
@@ -179,26 +179,33 @@ def login_tf(u: UserLoginModel):
 
 @app.post('/twofactor')
 async def two_factor(req: Request):
-    body = await req.json()
-    data = verify.read_verify_token(body['ref_token'])
-    valid = validate_email_factor_code(
-        user_id=data['uid'], tid=body['code'], time=data['timestamp'])
-    user = get_user_by_id(data['uid'])
-    if valid and user:
-        token = add_session(user)
-        if token:
-            update_last_login(user.id)
-            return {'username': user.username,
-                    'email': user.email,
-                    'firstname': user.firstname,
-                    'lastname': user.lastname,
-                    'organization': user.organization,
-                    'role': user.role,
-                    'token': token}
-
+    try:
+        body = await req.json()
+        data = verify.read_verify_token(body['ref_token'])
+        valid = validate_email_factor_code(
+            user_id=data['uid'], tid=body['code'], time=data['timestamp'])
+        user = get_user_by_id(data['uid'])
+        if valid and user:
+            token = add_session(user)
+            if token:
+                remove_email_factor_code(user.id)
+                update_last_login(user.id)
+                return {'username': user.username,
+                        'email': user.email,
+                        'firstname': user.firstname,
+                        'lastname': user.lastname,
+                        'organization': user.organization,
+                        'role': user.role,
+                        'token': token}
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
     raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid code can't login"
     )
 
 
