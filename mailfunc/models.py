@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
-from schemas import SMTPDisplayModel, SMTPFormModel
+from schemas import SMTPDisplayModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
 from datetime import datetime
 from dotenv import load_dotenv
 import bcrypt
@@ -37,7 +37,7 @@ class IMAP(Base):
 
     user_id = Column(Integer, primary_key=True)
     enabled = Column(Boolean, default=True)
-    host = Column(String(64))
+    host = Column(String(64), nullable=False)
     port = Column(Integer)
     username = Column(String(64), nullable=False)
     password = Column(String(2048), nullable=False)
@@ -59,6 +59,54 @@ def get_db():
         db.close()
 
 
+def get_all_smtp(page: int | None = None, size: int | None = None):
+    db: Session = next(get_db())
+    try:
+        if not page and not size:
+            smtp = db.query(SMTP).all()
+            return {'smtp': smtp, 'count': len(smtp), 'page': 1, 'limit': len(smtp)}
+
+        if page and not size:
+            size = 25
+        elif not page and size:
+            page = 1
+        if page < 0:
+            page = 1
+        if size < 0:
+            size = 25
+        count = db.query(SMTP).count()
+        smtp = db.query(SMTP).limit(size).offset(size*(page-1)).all()
+        return {'smtp': smtp, 'count': count, 'page': page, 'limit': size}
+
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_all_imap(page: int | None = None, size: int | None = None):
+    db: Session = next(get_db())
+    try:
+        if not page and not size:
+            imap = db.query(IMAP).all()
+            return {'imap': imap, 'count': len(imap), 'page': 1, 'limit': len(imap)}
+
+        if page and not size:
+            size = 25
+        elif not page and size:
+            page = 1
+        if page < 0:
+            page = 1
+        if size < 0:
+            size = 25
+        count = db.query(IMAP).count()
+        imap = db.query(IMAP).limit(size).offset(size*(page-1)).all()
+        return {'imap': imap, 'count': count, 'page': page, 'limit': size}
+
+    except Exception as e:
+        print(e)
+    return
+
+
 def get_smtp():
     db: Session = next(get_db())
     try:
@@ -68,10 +116,28 @@ def get_smtp():
     return
 
 
+def get_imap():
+    db: Session = next(get_db())
+    try:
+        return db.query(IMAP).all()
+    except Exception as e:
+        print(e)
+    return
+
+
 def get_smtp_id(id: int):
     db: Session = next(get_db())
     try:
         return db.query(SMTP).filter(SMTP.id == id).first()
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_imap_id(user_id: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(IMAP).filter(IMAP.user_id == user_id).first()
     except Exception as e:
         print(e)
     return
@@ -98,6 +164,32 @@ def create_smtp(smtp: SMTPDisplayModel):
     return
 
 
+def create_imap(imap: IMAPDisplayModel):
+    db: Session = next(get_db())
+    try:
+        read = IMAP(user_id=imap.user_id,
+                    enabled=imap.enabled,
+                    host=imap.host,
+                    port=imap.port,
+                    username=imap.username,
+                    password=imap.password,
+                    tls=imap.tls,
+                    ignore_cert_errors=imap.ignore_cert_errors,
+                    folder=imap.folder,
+                    restrict_domain=imap.restrict_domain,
+                    delete_reported_campaign_email=imap.delete_reported_campaign_email,
+                    last_login=imap.last_login,
+                    imap_freq=imap.imap_freq,
+                    modified_date=imap.modified_date)
+        db.add(read)
+        db.commit()
+        db.refresh(read)
+        return read
+    except Exception as e:
+        print(e)
+    return
+
+
 def update_smtp(db: Session, id: int, smtp: dict):
     db: Session = next(get_db())
     try:
@@ -109,6 +201,33 @@ def update_smtp(db: Session, id: int, smtp: dict):
     return
 
 
+def update_imap(db: Session, user_id: int, imap: dict):
+    db: Session = next(get_db())
+    try:
+        db.query(IMAP).filter(IMAP.user_id == user_id).update(imap)
+        db.commit()
+        return get_imap_id(user_id)
+    except Exception as e:
+        print(e)
+    return
+
+
 def delete_smtp(db: Session, id: int):
-    db.query(SMTP).filter(SMTP.id == id).delete()
-    db.commit()
+    db: Session = next(get_db())
+    try:
+        db.query(SMTP).filter(SMTP.id == id).delete()
+        db.commit()
+    except Exception as e:
+        print(e)
+    return
+
+
+def delete_imap(db: Session, user_id: int):
+    db: Session = next(get_db())
+    try:
+        db.query(IMAP).filter(IMAP.user_id == user_id).delete()
+        db.commit()
+        return True
+    except Exception as e:
+        print(e)
+    return
