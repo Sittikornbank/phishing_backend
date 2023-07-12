@@ -17,6 +17,12 @@ class AuthContext(BaseModel):
     organization: str = 'None'
 
 
+class AuthContext(BaseModel):
+    id: int
+    role: Role = Role.GUEST
+    organization: int = 0
+
+
 class Visible(str, Enum):
     ALL = 'all'
     PAID = 'paid'
@@ -71,6 +77,7 @@ class SiteFormModel(SiteModel):
     capture_credentials: bool | None = None
     capture_passwords: bool | None = None
     redirect_url: str | None = None
+    image_site: str | None = None
     visible: Visible | None = None
     owner_id: int | None = None
     org_id: int | None = None
@@ -82,6 +89,7 @@ class EmailFormModel(EmailModel):
     subject: str | None = None
     html: str | None = None
     attachments: str | None = None
+    image_email: str | None = None
     visible: Visible | None = None
     owner_id: int | None = None
     org_id: int | None = None
@@ -104,6 +112,7 @@ class SiteDisplayModel(BaseModel):
     redirect_url: str | None = None
     capture_credentials: bool | None = None
     capture_passwords: bool | None = None
+    image_site: str | None = None
 
     class Config:
         orm_mode = True
@@ -116,6 +125,7 @@ class EmailDisplayModel(BaseModel):
     subject: str | None = None
     html: str | None = None
     attachments: str | None = None
+    image_email: str | None = None
 
     class Config:
         orm_mode = True
@@ -143,3 +153,44 @@ class TemplateListModel(BaseModel):
     last_page: int = 1
     limit: int = 25
     templates: list[TemplateDisplayModel] = []
+
+
+class SiteListModel(BaseModel):
+    count: int = 0
+    page: int = 1
+    last_page: int = 1
+    limit: int = 25
+    site_templates: list[SiteModel] = []
+
+
+class EmailListModel(BaseModel):
+    count: int = 0
+    page: int = 1
+    last_page: int = 1
+    limit: int = 25
+    email_templates: list[EmailModel] = []
+
+
+class PhishsiteModel(BaseModel):
+    id: int | None = None
+    name: str = Field(min_length=1, max_length=128)
+    uri: str = Field(min_length=1, max_length=128)
+    secret_key: str = Field(max_length=512)
+
+    class Config:
+        orm_mode = True
+
+
+class PhishsiteFromModel(PhishsiteModel):
+    id: int | None = None
+    name: str | None = None
+    uri: str | None = None
+    secret_key: str | None = None
+
+
+class PhishsiteListModel(BaseModel):
+    count: int = 0
+    page: int = 1
+    last_page: int = 1
+    limit: int = 25
+    email_templates: list[PhishsiteModel] = []

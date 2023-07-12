@@ -46,13 +46,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.post('/authn')
-def token_authentication(req: Request):
+async def token_authentication(req: Request):
     try:
-        api_key = req.body['api_key']
-        token = req.body['token']
+        body = await req.json()
+        api_key = body['api_key']
+        token = body['token']
         result = authn(api_key, token)
         return result
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_511_NETWORK_AUTHENTICATION_REQUIRED,
             detail='Unauthorized',
@@ -60,10 +62,11 @@ def token_authentication(req: Request):
 
 
 @app.post('/authz')
-def token_authentication(req: Request):
+async def token_authentication(req: Request):
     try:
-        api_key = req.body['api_key']
-        token = req.body['token']
+        body = await req.json()
+        api_key = body['api_key']
+        token = body['token']
         roles = None
         organiz = None
         if 'roles' in req.body:
@@ -392,7 +395,7 @@ def del_user(userid: int, token: str = Depends(get_token)):
 
 
 def check_role(token: str, roles: tuple | None, organiz: tuple | None = None):
-    result = authz(api_key='abc12345', token=token,
+    result = authz(api_key=os.getenv('API_KEY'), token=token,
                    roles=roles, organiz=organiz)
     if result:
         return result
@@ -403,7 +406,7 @@ def check_role(token: str, roles: tuple | None, organiz: tuple | None = None):
 
 
 def check_login(token: str):
-    result = authn(api_key='abc12345', token=token)
+    result = authn(api_key=os.getenv('API_KEY'), token=token)
     if result:
         return True
     raise HTTPException(

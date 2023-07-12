@@ -4,9 +4,13 @@ from fastapi import status, HTTPException, Request
 from schemas import Role, Session, AuthContext
 from models import get_user_by_id, get_user_by_email, User, check_email_username_inuse
 from random import choices
+from dotenv import load_dotenv
 import uuid
+import os
 
-INTERNAL_API_KEY = "abc12345"
+load_dotenv()
+
+INTERNAL_API_KEY = os.getenv('API_KEY')
 sessions: dict[str, Session] = dict()
 sessions_reverse: dict[int, str] = dict()
 
@@ -31,6 +35,7 @@ class AuthzContext(BaseModel):
 
 def protect_api(api_key: str):
     if api_key != INTERNAL_API_KEY:
+        # print(api_key, INTERNAL_API_KEY)
         raise HTTPException(
             status_code=status.HTTP_511_NETWORK_AUTHENTICATION_REQUIRED,
             detail='Unauthorized',
@@ -44,7 +49,7 @@ def authn(api_key: str, token: str):
         try:
             user = get_user_by_id(sessions[token].id)
             if user and user.is_active:
-                return AuthContext(id=user.id, role=user.role, organization=user.organization)
+                return AuthContext(id=user.id, role=user.role, organization=0)
         except Exception as e:
             print(e)
     return
@@ -67,7 +72,7 @@ def authz(api_key: str, token: str, roles: tuple[str] | None, organiz: tuple[str
                 else:
                     access = False
                 if access:
-                    return AuthContext(id=user.id, role=user.role, organization=user.organization)
+                    return AuthContext(id=user.id, role=user.role, organization=0)
         except Exception as e:
             print(e)
     return
