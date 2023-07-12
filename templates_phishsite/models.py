@@ -2,11 +2,14 @@ from sqlalchemy import (Column, Integer, String, Boolean,
                         Text, create_engine, ForeignKey)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from schemas import Visible, EmailModel, SiteModel
+from schemas import Visible, EmailModel, SiteModel, TemplateModel, TemplateListModel
 from datetime import datetime
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
-DATABASE_URL = "mysql+pymysql://root@127.0.0.1/api?charset=utf8mb4"
+DATABASE_URL = os.getenv("DATABASE_URI")
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -23,6 +26,7 @@ class SiteTemplate(Base):
     capture_credentials = Column(Boolean, default=False)
     capture_passwords = Column(Boolean, default=False)
     redirect_url = Column(Text, default="")
+    image_site = Column(String(128), default="")
     modified_date = Column(String(64))
     create_at = Column(String(64), default=str(datetime.now()))
     visible = Column(String(32), default=Visible.NONE)
@@ -39,6 +43,7 @@ class EmailTemplate(Base):
     subject = Column(String(512), default="")
     html = Column(Text, default="")
     attachments = Column(String(512), default="")
+    image_email = Column(String(128), default="")
     modified_date = Column(String(64))
     create_at = Column(String(64), default=str(datetime.now()))
     visible = Column(String(32), default=Visible.NONE)
@@ -105,42 +110,6 @@ def get_site_template_by_id(id: int):
     db: Session = next(get_db())
     try:
         return db.query(SiteTemplate).filter(SiteTemplate.id == id).first()
-    except Exception as e:
-        print(e)
-    return
-
-
-def get_email_template_by_owner(owner: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(EmailTemplate).filter(EmailTemplate.owner_id == owner).all()
-    except Exception as e:
-        print(e)
-    return
-
-
-def get_site_template_by_owner(owner: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(SiteTemplate).filter(SiteTemplate.owner_id == owner).all()
-    except Exception as e:
-        print(e)
-    return
-
-
-def get_email_template_by_org(org: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(EmailTemplate).filter(EmailTemplate.org_id == org).all()
-    except Exception as e:
-        print(e)
-    return
-
-
-def get_site_template_by_org(org: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(SiteTemplate).filter(SiteTemplate.org_id == org).all()
     except Exception as e:
         print(e)
     return
@@ -236,6 +205,104 @@ def delete_site_temp(id: int):
         db.query(SiteTemplate).filter(SiteTemplate.id == id).delete()
         db.commit()
         return True
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_all_templates(page: int | None = None, size: int | None = None, show_none: bool = False):
+    db: Session = next(get_db())
+    try:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        temps = list()
+        count = 0
+        temp_db = None
+        if show_none:
+            count = db.query(Template).count()
+            temp_db = db.query(Template, EmailTemplate, SiteTemplate).filter(
+                Template.mail_template == EmailTemplate.id,
+                Template.site_template == SiteTemplate.id).limit(size).offset(size*(page-1))
+        else:
+            count = db.query(Template).filter(
+                Template.visible != Visible.NONE).count()
+            temp_db = db.query(Template, EmailTemplate, SiteTemplate).filter(
+                Template.visible != Visible.NONE,
+                Template.mail_template == EmailTemplate.id,
+                Template.site_template == SiteTemplate.id).limit(size).offset(size*(page-1))
+        for tem, etem, stem in temp_db:
+            setattr(tem, 'email_templates', etem)
+            setattr(tem, 'site_templates', stem)
+            temps.append(tem)
+        return TemplateListModel(count=count, page=page,
+                                 last_page=(count//size)+1,
+                                 limit=size,
+                                 templates=temps)
+    except Exception as e:
+        print(e)
+        return TemplateListModel()
+
+
+def get_template_by_id(id: int):
+    db: Session = next(get_db())
+    try:
+        temp, etemp, stemp = db.query(Template, EmailTemplate, SiteTemplate).filter(
+            Template.id == id,
+            Template.mail_template == EmailTemplate.id,
+            Template.site_template == SiteTemplate.id).first()
+        setattr(temp, 'email_templates', etemp)
+        setattr(temp, 'site_templates', stemp)
+        return temp
+    except Exception as e:
+        print(e)
+    return
+
+
+def create_template(temp_in: TemplateModel):
+    db: Session = next(get_db())
+    try:
+        temp = Template(
+            name=temp_in.name,
+            description=temp_in.description,
+            site_template=temp_in.site_template,
+            mail_template=temp_in.mail_template,
+            modified_date=temp_in.create_at,
+            create_at=temp_in.create_at,
+            visible=temp_in.visible,
+            owner_id=temp_in.owner_id,
+            org_id=temp_in.org_id
+        )
+        db.add(temp)
+        db.commit()
+        db.refresh(temp)
+        return temp
+    except Exception as e:
+        print(e)
+    return
+
+
+def update_template(temp_in: dict, id: int):
+    db: Session = next(get_db())
+    try:
+        db.query(Template).filter(Template.id == id).update(temp_in)
+        db.commit()
+        return get_template_by_id(id)
+    except Exception as e:
+        print(e)
+    return
+
+
+def delete_template(id: int):
+    db: Session = next(get_db())
+    try:
+        c = db.query(Template).filter(Template.id == id).delete()
+        db.commit()
+        if c:
+            return True
+        else:
+            return False
     except Exception as e:
         print(e)
     return

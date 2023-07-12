@@ -39,12 +39,19 @@ class TemplateModel(ParentModel):
     site_template: int | None = None
     mail_template: int | None = None
 
+    class Config:
+        orm_mode = True
+
 
 class SiteModel(ParentModel):
     html: str = ""
     capture_credentials: bool = False
     capture_passwords: bool = False
     redirect_url: str = ""
+    image_site: str = ""
+
+    class Config:
+        orm_mode = True
 
 
 class EmailModel(ParentModel):
@@ -52,6 +59,10 @@ class EmailModel(ParentModel):
     subject: str = ""
     html: str = ""
     attachments: str = ""
+    image_email: str = ""
+
+    class Config:
+        orm_mode = True
 
 
 class SiteFormModel(SiteModel):
@@ -60,8 +71,6 @@ class SiteFormModel(SiteModel):
     capture_credentials: bool | None = None
     capture_passwords: bool | None = None
     redirect_url: str | None = None
-    modified_date: datetime | None = None
-    create_at: datetime | None = None
     visible: Visible | None = None
     owner_id: int | None = None
     org_id: int | None = None
@@ -73,8 +82,6 @@ class EmailFormModel(EmailModel):
     subject: str | None = None
     html: str | None = None
     attachments: str | None = None
-    modified_date: datetime | None = None
-    create_at: datetime | None = None
     visible: Visible | None = None
     owner_id: int | None = None
     org_id: int | None = None
@@ -82,8 +89,6 @@ class EmailFormModel(EmailModel):
 
 class TemplateFromModel(TemplateModel):
     name: str | None = None
-    modified_date: datetime | None = None
-    create_at: datetime | None = None
     visible: Visible | None = None
     owner_id: int | None = None
     org_id: int | None = None
@@ -97,6 +102,8 @@ class SiteDisplayModel(BaseModel):
     name: str | None = None
     html: str | None = None
     redirect_url: str | None = None
+    capture_credentials: bool | None = None
+    capture_passwords: bool | None = None
 
     class Config:
         orm_mode = True
@@ -118,13 +125,21 @@ class TemplateDisplayModel(BaseModel):
     id: int | None = None
     name: str = ""
     description: str = ""
-    site_template: SiteDisplayModel
-    mail_template: EmailDisplayModel
-    modified_date: datetime = datetime.now()
-    create_at: datetime = datetime.now()
-    visible: Visible = Visible.NONE
+    email_templates: EmailDisplayModel | None
+    site_templates: SiteDisplayModel | None
+    modified_date: datetime | None = datetime.now()
+    create_at: datetime | None = datetime.now()
+    visible: Visible | None = Visible.NONE
     owner_id: int | None = None
     org_id: int | None = None
 
     class Config:
         orm_mode = True
+
+
+class TemplateListModel(BaseModel):
+    count: int = 0
+    page: int = 1
+    last_page: int = 1
+    limit: int = 25
+    templates: list[TemplateDisplayModel] = []
