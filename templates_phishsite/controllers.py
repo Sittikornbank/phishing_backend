@@ -11,6 +11,7 @@ from schemas import Role
 import os
 import schemas
 import models
+import workers
 
 
 load_dotenv()
@@ -333,6 +334,27 @@ async def del_phishsite(temp_id: int, token: str = Depends(get_token)):
         detail="Not Found"
     )
 
+
+@app.get('/phishsites/{temp_id}/check')
+async def check_phishsite(temp_id: int, token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    return workers.ping_worker_by_id(temp_id)
+
+
+@app.get('/phishsites/code')
+async def check_phishsite(token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    pass
+
+
+@app.get('/workers')
+async def handle_worker_get(req: Request):
+    body = await req.json()
+
+
+@app.post('/workers')
+async def handle_worker_post(req: Request):
+    body = await req.json()
 
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
