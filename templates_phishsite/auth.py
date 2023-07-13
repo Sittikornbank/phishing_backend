@@ -26,10 +26,11 @@ async def check_token(token: str):
     async with AsyncClient() as client:
         try:
             res = await client.post(AUTH_URI, json={'api_key': API_KEY, 'token': token})
-            if res.status_code == 200:
-                auth = res.json()
+            auth = res.json()
+            if res.status_code == 200 and auth:
                 return AuthContext(id=auth['id'], role=auth['role'], organization=auth['organization'])
-        except:
+        except Exception as e:
+            print(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="INTERNAL SERVER ERROR")
