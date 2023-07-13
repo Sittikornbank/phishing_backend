@@ -12,6 +12,7 @@ from schemas import Role
 import os
 import schemas
 import models
+import workers
 from random import choices
 
 import base64
@@ -353,6 +354,28 @@ async def del_phishsite(temp_id: int, token: str = Depends(get_token)):
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Not Found"
     )
+
+
+@app.get('/phishsites/{temp_id}/check')
+async def check_phishsite(temp_id: int, token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    return workers.ping_worker_by_id(temp_id)
+
+
+@app.get('/phishsites/code')
+async def check_phishsite(token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    pass
+
+
+@app.get('/workers')
+async def handle_worker_get(req: Request):
+    body = await req.json()
+
+
+@app.post('/workers')
+async def handle_worker_post(req: Request):
+    body = await req.json()
 
 
 def validate_and_set_image(temp_in:

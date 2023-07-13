@@ -11,6 +11,12 @@ class Role(str, Enum):
     SUPER = 'superadmin'
 
 
+class Event(str, Enum):
+    OPEN = 'open'
+    CLICK = 'click'
+    SUBMIT = 'submit'
+
+
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
@@ -194,3 +200,10 @@ class PhishsiteListModel(BaseModel):
     last_page: int = 1
     limit: int = 25
     phishsites: list[PhishsiteModel] = []
+
+
+class EventContext(BaseModel):
+    ref_key: str
+    ref_id: str
+    event_type: Event
+    payload: str | None
