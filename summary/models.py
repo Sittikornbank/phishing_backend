@@ -83,3 +83,53 @@ def get_all_campaigns(page: int | None = None, size: int | None = None):
     except Exception as e:
         print(e)
     return CampaignListModel()
+
+
+def get_campaign_by_id(id: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(Campaign).filter(Campaign.id == id).first()
+    except Exception as e:
+        print(e)
+    return
+
+
+def create_campaign(camp: CampaignModel):
+    db: Session = next(get_db())
+    try:
+        camp = Campaign(
+            user_id=camp.user_id,
+            name=camp.name,
+            create_date=camp.create_date,
+            complate=camp.complate,
+            templates_id=camp.templates_id,
+            status=camp.status,
+            url=camp.url,
+            smtp_id=camp.smtp_id,
+            launch_date=camp.launch_date,
+            send_by_date=camp.send_by_date,
+            visible=camp.visible,
+            owner_id=camp.owner_id,
+            org_id=camp.org_id
+        )
+        db.add(camp)
+        db.commit()
+        db.refresh(camp)
+        return camp
+    except Exception as e:
+        print(e)
+    return
+
+
+def update_site_temp(id: int, camp_in: dict):
+    db: Session = next(get_db())
+    try:
+        if camp_in:
+            camp_in['create_date'] = datetime.now()
+            db.query(Campaign).filter(
+                Campaign.id == id).update(camp_in)
+            db.commit()
+            return get_campaign_by_id(id)
+    except Exception as e:
+        print(e)
+    return

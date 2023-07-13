@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
-from schemas import SMTPDisplayModel, SMTPListModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
+from schemas import SMTPDisplayModel, SMTPListModel, IMAPListModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
 from datetime import datetime
 from dotenv import load_dotenv
 import bcrypt
@@ -66,8 +66,9 @@ def get_all_smtp(page: int | None = None, size: int | None = None):
             size = 25
         if not page or page < 0:
             page = 1
-        smtps = db.query(SMTP).offset(size*(page-1)).all()
+        smtps = db.query(SMTP).limit(size).offset(size*(page-1)).all()
         count = db.query(SMTP).count()
+
         return SMTPListModel(count=count,
                              page=page,
                              limit=size,
@@ -81,25 +82,21 @@ def get_all_smtp(page: int | None = None, size: int | None = None):
 def get_all_imap(page: int | None = None, size: int | None = None):
     db: Session = next(get_db())
     try:
-        if not page and not size:
-            imap = db.query(IMAP).all()
-            return {'imap': imap, 'count': len(imap), 'page': 1, 'limit': len(imap)}
-
-        if page and not size:
+        if not size or size < 0:
             size = 25
-        elif not page and size:
+        if not page or page < 0:
             page = 1
-        if page < 0:
-            page = 1
-        if size < 0:
-            size = 25
+        imaps = db.query(IMAP).limit(size).offset(size*(page-1)).all()
         count = db.query(IMAP).count()
-        imap = db.query(IMAP).limit(size).offset(size*(page-1)).all()
-        return {'imap': imap, 'count': count, 'page': page, 'limit': size}
 
+        return IMAPListModel(count=count,
+                             page=page,
+                             limit=size,
+                             last_page=(count//size)+1,
+                             imap=imaps)
     except Exception as e:
         print(e)
-    return
+    return IMAPListModel()
 
 
 def get_smtp():
