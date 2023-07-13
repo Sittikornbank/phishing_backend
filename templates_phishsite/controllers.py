@@ -60,7 +60,7 @@ def get_template(temp_id: int, token: str = Depends(get_token)):
     )
 
 
-@app.post('/templates')
+@app.post('/templates', response_model=schemas.TemplateModel)
 async def add_template(temp_in: schemas.TemplateModel,
                        token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -74,7 +74,7 @@ async def add_template(temp_in: schemas.TemplateModel,
     )
 
 
-@app.put('/templates/{temp_id}')
+@app.put('/templates/{temp_id}', response_model=schemas.TemplateModel)
 async def modify_template(temp_id: int, temp_in: schemas.TemplateFromModel,
                           token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -134,7 +134,7 @@ async def get_site_template(temp_id: int, token: str = Depends(get_token)):
     )
 
 
-@app.post('/site_templates')
+@app.post('/site_templates', response_model=schemas.SiteModel)
 async def add_site_template(temp_in: schemas.SiteModel,
                             token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -148,7 +148,7 @@ async def add_site_template(temp_in: schemas.SiteModel,
     )
 
 
-@app.put('/site_templates/{temp_id}')
+@app.put('/site_templates/{temp_id}', response_model=schemas.SiteModel)
 async def modify_site_template(temp_id: int, temp_in: schemas.SiteFormModel,
                                token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -211,7 +211,7 @@ async def get_email_template(temp_id: int, token: str = Depends(get_token)):
     )
 
 
-@app.post('/email_templates')
+@app.post('/email_templates', response_model=schemas.EmailModel)
 async def add_email_template(temp_in: schemas.EmailModel,
                              token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -225,7 +225,7 @@ async def add_email_template(temp_in: schemas.EmailModel,
     )
 
 
-@app.put('/email_templates/{temp_id}')
+@app.put('/email_templates/{temp_id}', response_model=schemas.EmailModel)
 async def modify_email_template(temp_id: int, temp_in: schemas.EmailFormModel,
                                 token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -261,6 +261,71 @@ async def modify_email_template(temp_id: int, temp_in: schemas.EmailFormModel,
 async def del_email_template(temp_id: int, token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
     temp = models.delete_email_temp(temp_id)
+    if temp:
+        return {'success': temp}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Not Found"
+    )
+
+
+@app.get('/phishsites', response_model=schemas.PhishsiteListModel)
+async def get_phishsites(page: int | None = 1, limit: int | None = 25,
+                         token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    return models.get_all_phishsites(page=page, size=limit)
+
+
+@app.get('/phishsites/{temp_id}', response_model=schemas.PhishsiteModel)
+async def get_phishsite(temp_id: int, token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    temp = models.get_phishsite_by_id(id=temp_id)
+    if temp:
+        return temp
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Not Found"
+    )
+
+
+@app.post('/phishsites', response_model=schemas.PhishsiteModel)
+async def add_phishsite(temp_in: schemas.PhishsiteModel,
+                        token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    temp = models.create_phishsite(temp_in=temp_in)
+    if temp:
+        return temp
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Parameter Error"
+    )
+
+
+@app.put('/phishsites/{temp_id}', response_model=schemas.PhishsiteModel)
+async def modify_phishsite(temp_id: int, temp_in: schemas.PhishsiteFromModel,
+                           token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    t = dict()
+    if temp_in.name:
+        t['name'] = temp_in.name
+    if temp_in.uri:
+        t['uri'] = temp_in.uri
+    if temp_in.secret_key:
+        t['secret_key'] = temp_in.secret_key
+
+    temp = models.update_phishsite(temp_in=t, id=temp_id)
+    if temp:
+        return temp
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Not Found"
+    )
+
+
+@app.delete('/phishsites/{temp_id}')
+async def del_phishsite(temp_id: int, token: str = Depends(get_token)):
+    await check_permission(token, (Role.SUPER,))
+    temp = models.delete_phishsite(id=temp_id)
     if temp:
         return {'success': temp}
     raise HTTPException(

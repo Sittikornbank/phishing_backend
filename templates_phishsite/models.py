@@ -4,7 +4,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from schemas import (Visible, EmailModel, SiteModel,
                      TemplateModel, TemplateListModel,
-                     SiteListModel, EmailListModel)
+                     SiteListModel, EmailListModel,
+                     PhishsiteListModel, PhishsiteModel)
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -336,6 +337,75 @@ def delete_template(id: int):
     db: Session = next(get_db())
     try:
         c = db.query(Template).filter(Template.id == id).delete()
+        db.commit()
+        return c > 0
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_all_phishsites(page: int | None = None, size: int | None = None):
+    db: Session = next(get_db())
+    try:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        temps = db.query(Phishsite).limit(size).offset(size*(page-1)).all()
+        count = db.query(Phishsite).count()
+
+        return PhishsiteListModel(count=count, page=page,
+                                  last_page=(count//size)+1,
+                                  limit=size,
+                                  phishsites=temps)
+    except Exception as e:
+        print(e)
+        return PhishsiteListModel()
+
+
+def get_phishsite_by_id(id: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(Phishsite).filter(Phishsite.id == id).first()
+    except Exception as e:
+        print(e)
+    return
+
+
+def create_phishsite(temp_in: PhishsiteModel):
+    db: Session = next(get_db())
+    try:
+        temp = Phishsite(
+            name=temp_in.name,
+            uri=temp_in.uri,
+            secret_key=temp_in.secret_key
+        )
+        db.add(temp)
+        db.commit()
+        db.refresh(temp)
+        return temp
+    except Exception as e:
+        print(e)
+    return
+
+
+def update_phishsite(temp_in: dict, id: int):
+    db: Session = next(get_db())
+    try:
+        if temp_in:
+            # temp_in['modified_date'] = datetime.now()
+            db.query(Phishsite).filter(Phishsite.id == id).update(temp_in)
+            db.commit()
+            return get_phishsite_by_id(id)
+    except Exception as e:
+        print(e)
+    return
+
+
+def delete_phishsite(id: int):
+    db: Session = next(get_db())
+    try:
+        c = db.query(Phishsite).filter(Phishsite.id == id).delete()
         db.commit()
         return c > 0
     except Exception as e:

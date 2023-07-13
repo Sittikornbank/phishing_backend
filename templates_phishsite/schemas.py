@@ -193,4 +193,4 @@ class PhishsiteListModel(BaseModel):
     page: int = 1
     last_page: int = 1
     limit: int = 25
-    email_templates: list[PhishsiteModel] = []
+    phishsites: list[PhishsiteModel] = []
