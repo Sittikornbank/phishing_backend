@@ -12,11 +12,8 @@ from schemas import Role
 import os
 import schemas
 import models
-<<<<<<< HEAD
 import workers
-=======
 from random import choices
->>>>>>> 87c15e0b53387e0d55d50166e58aad96c95af48a
 
 import base64
 
@@ -379,6 +376,7 @@ async def handle_worker_get(req: Request):
 @app.post('/workers')
 async def handle_worker_post(req: Request):
     body = await req.json()
+
 
 def validate_and_set_image(temp_in:
                            schemas.SiteModel | schemas.EmailModel |
