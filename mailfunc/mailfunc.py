@@ -15,8 +15,8 @@ import os
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
-
-
+import models
+import schemas
 app = FastAPI()
 
 load_dotenv()
@@ -66,99 +66,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
-# @app.get('/smtp')
-# async def get_smtp_configs():
-#     smtp_configs = get_smtp()
-#     if not smtp_configs:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="smtp not found")
-
-#     return smtp_configs
-
-# @app.get("/smtp", response_model=SMTPListModel)
-# async def get_smtp_configss(page: int = None, limit: int = None):
-
-#     smtp_data = get_smtp()
-#     if not smtp_data:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="smtp not found")
-
-#     if page and page < 0:
-#         page = 1
-#     if limit and limit < 1:
-#         limit = 25
-#     smtp_configs = get_all_smtp(page, limit)
-
-#     if smtp_configs and 'smtp' in smtp_configs:
-#         return SMTPListModel(
-#             count=smtp_configs['count'],
-#             page=smtp_configs['page'],
-#             last_page=(smtp_configs['count'] // smtp_configs['limit']) + 1,
-#             limit=smtp_configs['limit'],
-#             smtp=smtp_configs['smtp']
-#         )
-
-@app.get("/smtp", response_model=SMTPListModel)
-async def get_smtp_configss(page: int = None, limit: int = None):
-
+@app.get("/smtp", response_model=schemas.SMTPListModel)
+async def get_smtp_configss(page: int | None = 1, limit: int | None = 25):
     smtp_data = get_smtp()
     if not smtp_data:
         return SMTPListModel()
-
-    if page and page < 0:
-        page = 1
-    if limit and limit < 1:
-        limit = 25
 # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
-    smtp_configs = get_all_smtp(page, limit)
-    if smtp_configs and 'smtp' in smtp_configs:  # show get_all_smtp
-        return SMTPListModel(
-            count=smtp_configs['count'],
-            page=smtp_configs['page'],
-            last_page=(smtp_configs['count'] // smtp_configs['limit']) + 1,
-            limit=smtp_configs['limit'],
-            smtp=smtp_configs['smtp']
-        )
-
-
-# async def get_smtp_configs(page: int = None, limit: int = None):
-#     if page and page < 0:
-#         page = 1
-#     if limit and limit < 1:
-#         limit = 25
-
-#     # Assuming this function retrieves all users
-#     user = get_all_smtp(page, limit)
-
-#     if user and 'smtp' in user:
-#         return SMTPListModel(
-#             count=user['count'],
-#             page=user['page'],
-#             last_page=(user['count'] // user['limit']) + 1,
-#             limit=user['limit'],
-#             smtp=user['smtp']
-#         )
-#     else:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-#                             detail="SMTP not found")
-
-    # if page and page < 0:
-    #     page = 1
-    # if limit and limit < 1:
-    #     limit = 25
-    # send = None
-    # smtp_configs = get_all_smtp()
-    # if not smtp_configs:
-    #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-    #                         detail="SMTP not found")
-    # if send and 'smtp' in send:
-    #     return IMAPListModel(count=send['count'], page=send['page'],
-    #                          last_page=(send['count']//send['limit'])+1,
-    #                          limit=send['limit'],
-    #                          smtp=send['smtp'])
-    # return IMAPListModel()
+    return models.get_all_smtp(page=page, size=limit)
 
 
 @app.get("/smtp/{userid}", response_model=SMTPDisplayModel)

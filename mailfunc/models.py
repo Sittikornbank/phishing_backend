@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
-from schemas import SMTPDisplayModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
+from schemas import SMTPDisplayModel, SMTPListModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
 from datetime import datetime
 from dotenv import load_dotenv
 import bcrypt
@@ -62,25 +62,20 @@ def get_db():
 def get_all_smtp(page: int | None = None, size: int | None = None):
     db: Session = next(get_db())
     try:
-        if not page and not size:
-            smtp = db.query(SMTP).all()
-            return {'smtp': smtp, 'count': len(smtp), 'page': 1, 'limit': len(smtp)}
-
-        if page and not size:
+        if not size or size < 0:
             size = 25
-        elif not page and size:
+        if not page or page < 0:
             page = 1
-        if page < 0:
-            page = 1
-        if size < 0:
-            size = 25
+        smtps = db.query(SMTP).offset(size*(page-1)).all()
         count = db.query(SMTP).count()
-        smtp = db.query(SMTP).limit(size).offset(size*(page-1)).all()
-        return {'smtp': smtp, 'count': count, 'page': page, 'limit': size}
-
+        return SMTPListModel(count=count,
+                             page=page,
+                             limit=size,
+                             last_page=(count//size)+1,
+                             smtp=smtps)
     except Exception as e:
         print(e)
-    return
+    return SMTPListModel()
 
 
 def get_all_imap(page: int | None = None, size: int | None = None):
