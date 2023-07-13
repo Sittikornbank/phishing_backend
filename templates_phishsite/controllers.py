@@ -359,7 +359,6 @@ async def del_phishsite(temp_id: int, token: str = Depends(get_token)):
     )
 
 
-<<<<<<< HEAD
 @app.get('/phishsites/{temp_id}/check')
 async def check_phishsite(temp_id: int, token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -381,7 +380,6 @@ async def handle_worker_get(req: Request):
 async def handle_worker_post(req: Request):
     body = await req.json()
 
-=======
 def validate_and_set_image(temp_in:
                            schemas.SiteModel | schemas.EmailModel |
                            schemas.SiteFormModel | schemas.EmailFormModel):
@@ -416,6 +414,5 @@ def validate_and_set_image(temp_in:
     return temp_in
 
 
->>>>>>> 87c15e0b53387e0d55d50166e58aad96c95af48a
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
