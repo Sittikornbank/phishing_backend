@@ -2,3 +2,5 @@
 *.env
 */images
 */.png
+*.bat
+*/log

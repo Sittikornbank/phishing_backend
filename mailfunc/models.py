@@ -1,11 +1,10 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import sessionmaker, Session
 from schemas import SMTPDisplayModel, SMTPListModel, IMAPListModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
 from datetime import datetime
 from dotenv import load_dotenv
-import bcrypt
 import os
 
 
@@ -99,22 +98,22 @@ def get_all_imap(page: int | None = None, size: int | None = None):
     return IMAPListModel()
 
 
-def get_smtp():
-    db: Session = next(get_db())
-    try:
-        return db.query(SMTP).all()
-    except Exception as e:
-        print(e)
-    return
+# def get_smtp():
+#     db: Session = next(get_db())
+#     try:
+#         return db.query(SMTP).all()
+#     except Exception as e:
+#         print(e)
+#     return
 
 
-def get_imap():
-    db: Session = next(get_db())
-    try:
-        return db.query(IMAP).all()
-    except Exception as e:
-        print(e)
-    return
+# def get_imap():
+#     db: Session = next(get_db())
+#     try:
+#         return db.query(IMAP).all()
+#     except Exception as e:
+#         print(e)
+#     return
 
 
 def get_smtp_id(id: int):
@@ -182,7 +181,7 @@ def create_imap(imap: IMAPDisplayModel):
     return
 
 
-def update_smtp(db: Session, id: int, smtp: dict):
+def update_smtp(id: int, smtp: dict):
     db: Session = next(get_db())
     try:
         db.query(SMTP).filter(SMTP.id == id).update(smtp)
@@ -193,7 +192,7 @@ def update_smtp(db: Session, id: int, smtp: dict):
     return
 
 
-def update_imap(db: Session, user_id: int, imap: dict):
+def update_imap(user_id: int, imap: dict):
     db: Session = next(get_db())
     try:
         db.query(IMAP).filter(IMAP.user_id == user_id).update(imap)
@@ -204,22 +203,23 @@ def update_imap(db: Session, user_id: int, imap: dict):
     return
 
 
-def delete_smtp(db: Session, id: int):
+def delete_smtp(id: int):
     db: Session = next(get_db())
     try:
-        db.query(SMTP).filter(SMTP.id == id).delete()
+        c = db.query(SMTP).filter(SMTP.id == id).delete()
         db.commit()
+        return c > 0
     except Exception as e:
         print(e)
     return
 
 
-def delete_imap(db: Session, user_id: int):
+def delete_imap(user_id: int):
     db: Session = next(get_db())
     try:
-        db.query(IMAP).filter(IMAP.user_id == user_id).delete()
+        c = db.query(IMAP).filter(IMAP.user_id == user_id).delete()
         db.commit()
-        return True
+        return c > 0
     except Exception as e:
         print(e)
     return

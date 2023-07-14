@@ -20,12 +20,6 @@ class Event(str, Enum):
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
-    organization: str = 'None'
-
-
-class AuthContext(BaseModel):
-    id: int
-    role: Role = Role.GUEST
     organization: int = 0
 
 
