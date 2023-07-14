@@ -74,8 +74,11 @@ def code(lang: str):
 
 def process_event(context: EventContext, wid: int):
     if context.ref_id in tasks and tasks[context.ref_id][0] == wid:
-        print(
-            f'Event:{context.event_type}, Campaign:{context.ref_id}, Payload:{context.payload}')
+        script_dir = os.path.dirname(__file__)
+        path = os.path.join(script_dir, f'log/{context.ref_id}.txt')
+        with open(path, 'a') as f:
+            f.write(
+                f'[{datetime.now().isoformat()}]Event:{context.event_type.value} Campaign:{context.ref_id} Payload:{context.payload}\n')
 
 
 def get_landing(context: EventContext, wid: int):
