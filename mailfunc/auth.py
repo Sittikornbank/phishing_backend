@@ -48,3 +48,8 @@ async def check_permission(token: str, roles: tuple[Role]):
             detail="Unauthorized"
         )
     return auth
+
+
+async def auth_token(req: Request):
+    token = get_token(req)
+    return await check_token(token)

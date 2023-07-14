@@ -3,20 +3,18 @@ from fastapi import Request, FastAPI
 from fastapi import Request, FastAPI, status, HTTPException, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from schemas import (SMTPDisplayModel, SMTPFormModel,
                      SMTPModel, IMAPDisplayModel, IMAPFormModel,
-                     IMAPModel, SMTPListModel, IMAPListModel)
-from models import (Base, engine, get_db, get_smtp, get_smtp_id, get_all_smtp, get_all_imap,
-                    create_smtp, update_smtp, delete_smtp,
-                    get_imap, get_imap_id, create_imap,
-                    update_imap, delete_imap)
-import os
-from sqlalchemy.orm import Session
+                     IMAPModel, SMTPListModel, IMAPListModel, AuthContext, Role)
+from models import (Base, engine)
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+from auth import check_permission, get_token, check_token, auth_token
+import os
 import models
 import schemas
+
 app = FastAPI()
 
 load_dotenv()
@@ -45,14 +43,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
-@app.get("/smtp", response_model=schemas.SMTPListModel)
-async def get_smtp_configss(page: int | None = 1, limit: int | None = 25):
+@app.get("/smtp", response_model=SMTPListModel)
+async def get_smtp_configss(
+        page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+    if auth.role == Role.SUPER:
+        return models.get_all_smtp(page=page, size=limit)
+    elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+        return models.get_all_smtp(page=page, size=limit)
     return models.get_all_smtp(page=page, size=limit)
 
 
 @app.get("/smtp/{userid}", response_model=SMTPDisplayModel)
-async def get_smtp_config(userid: int):
-    smtp_config = get_smtp_id(userid)
+async def get_smtp_config(userid: int, auth: AuthContext = Depends(auth_token)):
+
+    smtp_config = models.get_smtp_id(userid)
     if not smtp_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -61,7 +65,8 @@ async def get_smtp_config(userid: int):
 
 
 @app.post("/smtp", response_model=SMTPDisplayModel)
-async def create_smtp_config(s: SMTPModel):
+async def create_smtp_config(s: SMTPModel, auth: AuthContext = Depends(auth_token)):
+
     form_smtp = SMTPDisplayModel(user_id=s.user_id,
                                  interface_type="smtp",
                                  name=s.name,
@@ -70,7 +75,7 @@ async def create_smtp_config(s: SMTPModel):
                                  password=s.password,
                                  from_address=s.from_address,
                                  ignore_cert_errors=s.ignore_cert_errors)
-    s = create_smtp(form_smtp)
+    s = models.create_smtp(form_smtp)
     if s:
         return s
     raise HTTPException(
@@ -80,9 +85,9 @@ async def create_smtp_config(s: SMTPModel):
 
 @app.put("/smtp/{userid}", response_model=SMTPDisplayModel)
 async def update_smtp_config(
-    userid: int, smtp: SMTPFormModel, db: Session = Depends(get_db)
-):
-    updated_smtp = update_smtp(db, userid, smtp.dict(exclude_unset=True))
+        userid: int, smtp: SMTPFormModel, auth: AuthContext = Depends(auth_token)):
+
+    updated_smtp = models.update_smtp(smtp.dict(exclude_unset=True))
     if updated_smtp:
         return updated_smtp
 
@@ -92,10 +97,9 @@ async def update_smtp_config(
 
 
 @app.delete("/smtp/{userid}")
-async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
-    existing_smtp = get_smtp_id(userid)
+async def delete_smtp_config(userid: int, auth: AuthContext = Depends(auth_token)):
 
-    c = delete_smtp(db, userid)
+    c = models.delete_smtp(userid)
     if c:
         return {'success': c}
     raise HTTPException(
@@ -104,13 +108,15 @@ async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
 
 
 @app.get("/imap", response_model=IMAPListModel)
-async def get_imap_configss(page: int | None = 1, limit: int | None = 25):
+async def get_imap_configss(
+        page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+
     return models.get_all_imap(page=page, size=limit)
 
 
 @app.get('/imap/{userid}', response_model=IMAPDisplayModel)
-async def get_imap_config(userid: int):
-    imap_config = get_imap_id(userid)
+async def get_imap_config(userid: int, auth: AuthContext = Depends(auth_token)):
+    imap_config = models.get_imap_id(userid)
     if not imap_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -119,7 +125,7 @@ async def get_imap_config(userid: int):
 
 
 @app.post('/imap', response_model=IMAPModel)
-async def create_imap_config(imap: IMAPModel):
+async def create_imap_config(imap: IMAPModel, auth: AuthContext = Depends(auth_token)):
     form_imap = IMAPDisplayModel(user_id=imap.user_id,
                                  enabled=imap.enabled,
                                  host=imap.host,
@@ -133,7 +139,7 @@ async def create_imap_config(imap: IMAPModel):
                                  delete_reported_campaign_email=imap.delete_reported_campaign_email,
                                  last_login=imap.last_login,
                                  imap_freq=imap.imap_freq)
-    created_imap = create_imap(form_imap)
+    created_imap = models.create_imap(form_imap)
     if created_imap:
         return created_imap
     raise HTTPException(
@@ -143,8 +149,8 @@ async def create_imap_config(imap: IMAPModel):
 
 @app.put('/imap/{userid}', response_model=IMAPDisplayModel)
 async def update_imap_config(
-        userid: int, imap: IMAPFormModel, db: Session = Depends(get_db)):
-    updated_imap = update_imap(db, userid, imap.dict(exclude_unset=True))
+        userid: int, imap: IMAPFormModel, auth: AuthContext = Depends(auth_token)):
+    updated_imap = models.update_imap(userid, imap.dict(exclude_unset=True))
     if updated_imap:
         return updated_imap
     raise HTTPException(
@@ -153,8 +159,8 @@ async def update_imap_config(
 
 
 @app.delete('/imap/{userid}')
-async def delete_imap_config(userid: int, db: Session = Depends(get_db)):
-    c = delete_imap(db, userid)
+async def delete_imap_config(userid: int, auth: AuthContext = Depends(auth_token)):
+    c = models.delete_imap(userid)
     if c:
         return {"success": c}
     raise HTTPException(
@@ -162,8 +168,8 @@ async def delete_imap_config(userid: int, db: Session = Depends(get_db)):
 
 
 @app.get('/imap/{userid}/check')
-async def check_imap_config(userid: int):
-    imap_config = get_imap_id(userid)
+async def check_imap_config(userid: int, auth: AuthContext = Depends(auth_token)):
+    imap_config = models.get_imap_id(userid)
     if not imap_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="IMAP not found")
@@ -175,9 +181,9 @@ async def check_imap_config(userid: int):
 
 if __name__ == "__main__":
     # Check if SMTP configuration with user_id=1 already exists
-    existing_smtp = get_smtp_id(1)
+    existing_smtp = models.get_smtp_id(1)
     if not existing_smtp:
-        create_smtp(SMTPDisplayModel(
+        models.create_smtp(SMTPDisplayModel(
             user_id=-1,
             interface_type="smtp",
             name=os.getenv('DEV_NAME'),
