@@ -374,7 +374,8 @@ async def check_phishsite(lang: str, token: str = Depends(get_token)):
 async def handle_worker_post(req: Request):
     body = await req.json()
     if body and 'ref_key' in body and 'ref_id' in body and 'event_type' in body:
-        if not workers.validate_token(body['ref_key']):
+        wid = workers.validate_token(body['ref_key'])
+        if wid < 1:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Not Found"
@@ -384,13 +385,13 @@ async def handle_worker_post(req: Request):
                                        event_type=body['event_type'])
         if 'payload' in body and body['payload']:
             context.payload = body['payload']
-        workers.process_event(context)
+        workers.process_event(context, wid)
         if body['event_type'] == schemas.Event.CLICK:
-            temp = workers.get_landing(context)
+            temp = workers.get_landing(context, wid)
             if temp:
                 return {'html': temp.html}
         elif body['event_type'] == schemas.Event.SUBMIT:
-            temp = workers.get_landing(context)
+            temp = workers.get_landing(context, wid)
             if temp:
                 return {'redirect_url': temp.redirect_url}
         else:

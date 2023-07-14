@@ -14,6 +14,7 @@ SECRET = os.getenv("SECRET")
 # rid, phishsite id, site template id
 tasks: dict[str, tuple[int, int]] = dict()
 tasks['abc'] = (4, 3)
+tasks['hello'] = (5, 102)
 
 
 def create_token(worker: Phishsite):
@@ -25,17 +26,16 @@ def create_token(worker: Phishsite):
 def validate_token(ref_key: str):
     data = jwt.decode(ref_key, options={"verify_signature": False})
     if 'id' not in data:
-        return False
+        return -1
     worker = get_phishsite_by_id(data['id'])
-    print(worker)
     if not worker:
-        return False
+        return -1
     try:
         jwt.decode(ref_key, worker.secret_key, algorithms=["HS256"])
-        return True
+        return worker.id
     except Exception as e:
         print(e)
-    return False
+    return -1
 
 
 async def ping_worker_by_id(id: int):
@@ -72,12 +72,12 @@ def code(lang: str):
         return '''print("hello world!")'''
 
 
-def process_event(context: EventContext):
-    if context.ref_id in tasks:
+def process_event(context: EventContext, wid: int):
+    if context.ref_id in tasks and tasks[context.ref_id][0] == wid:
         print(
             f'Event:{context.event_type}, Campaign:{context.ref_id}, Payload:{context.payload}')
 
 
-def get_landing(context: EventContext):
-    if context.ref_id in tasks:
+def get_landing(context: EventContext, wid: int):
+    if context.ref_id in tasks and tasks[context.ref_id][0] == wid:
         return get_site_template_by_id(tasks[context.ref_id][1])
