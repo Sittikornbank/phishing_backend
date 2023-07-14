@@ -10,10 +10,9 @@ from schemas import (SMTPDisplayModel, SMTPFormModel,
                      IMAPModel, SMTPListModel, IMAPListModel, AuthContext, Role)
 from models import (Base, engine)
 from dotenv import load_dotenv
-from auth import check_permission, get_token, check_token, auth_token
+from auth import auth_token, auth_permission
 import os
 import models
-import schemas
 
 app = FastAPI()
 
@@ -53,10 +52,10 @@ async def get_smtp_configss(
     return models.get_all_smtp(page=page, size=limit)
 
 
-@app.get("/smtp/{userid}", response_model=SMTPDisplayModel)
-async def get_smtp_config(userid: int, auth: AuthContext = Depends(auth_token)):
+@app.get("/smtp/{id}", response_model=SMTPDisplayModel)
+async def get_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
 
-    smtp_config = models.get_smtp_id(userid)
+    smtp_config = models.get_smtp_id(id)
     if not smtp_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -83,9 +82,9 @@ async def create_smtp_config(s: SMTPModel, auth: AuthContext = Depends(auth_toke
         detail="invalid smtp format")
 
 
-@app.put("/smtp/{userid}", response_model=SMTPDisplayModel)
+@app.put("/smtp/{id}", response_model=SMTPDisplayModel)
 async def update_smtp_config(
-        userid: int, smtp: SMTPFormModel, auth: AuthContext = Depends(auth_token)):
+        id: int, smtp: SMTPFormModel, auth: AuthContext = Depends(auth_token)):
 
     updated_smtp = models.update_smtp(smtp.dict(exclude_unset=True))
     if updated_smtp:
@@ -96,10 +95,10 @@ async def update_smtp_config(
         detail="SMTP not found")
 
 
-@app.delete("/smtp/{userid}")
-async def delete_smtp_config(userid: int, auth: AuthContext = Depends(auth_token)):
+@app.delete("/smtp/{id}")
+async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
 
-    c = models.delete_smtp(userid)
+    c = models.delete_smtp(id)
     if c:
         return {'success': c}
     raise HTTPException(
@@ -114,9 +113,9 @@ async def get_imap_configss(
     return models.get_all_imap(page=page, size=limit)
 
 
-@app.get('/imap/{userid}', response_model=IMAPDisplayModel)
-async def get_imap_config(userid: int, auth: AuthContext = Depends(auth_token)):
-    imap_config = models.get_imap_id(userid)
+@app.get('/imap/{id}', response_model=IMAPDisplayModel)
+async def get_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
+    imap_config = models.get_imap_id(id)
     if not imap_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -147,10 +146,10 @@ async def create_imap_config(imap: IMAPModel, auth: AuthContext = Depends(auth_t
         detail="Invalid IMAP format")
 
 
-@app.put('/imap/{userid}', response_model=IMAPDisplayModel)
+@app.put('/imap/{id}', response_model=IMAPDisplayModel)
 async def update_imap_config(
-        userid: int, imap: IMAPFormModel, auth: AuthContext = Depends(auth_token)):
-    updated_imap = models.update_imap(userid, imap.dict(exclude_unset=True))
+        id: int, imap: IMAPFormModel, auth: AuthContext = Depends(auth_token)):
+    updated_imap = models.update_imap(id, imap.dict(exclude_unset=True))
     if updated_imap:
         return updated_imap
     raise HTTPException(
@@ -158,18 +157,18 @@ async def update_imap_config(
         detail="IMAP not found")
 
 
-@app.delete('/imap/{userid}')
-async def delete_imap_config(userid: int, auth: AuthContext = Depends(auth_token)):
-    c = models.delete_imap(userid)
+@app.delete('/imap/{id}')
+async def delete_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
+    c = models.delete_imap(id)
     if c:
         return {"success": c}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail="IMAP not found")
 
 
-@app.get('/imap/{userid}/check')
-async def check_imap_config(userid: int, auth: AuthContext = Depends(auth_token)):
-    imap_config = models.get_imap_id(userid)
+@app.get('/imap/{id}/check')
+async def check_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
+    imap_config = models.get_imap_id(id)
     if not imap_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="IMAP not found")
