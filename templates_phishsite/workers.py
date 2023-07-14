@@ -6,12 +6,36 @@ from time import time
 from datetime import datetime, timedelta
 from schemas import EventContext, Event
 import os
+import jwt
 
 load_dotenv()
 
 SECRET = os.getenv("SECRET")
 # rid, phishsite id, site template id
 tasks: dict[str, tuple[int, int]] = dict()
+tasks['abc'] = (4, 3)
+
+
+def create_token(worker: Phishsite):
+    return jwt.encode({"id": worker.id,
+                       "exp": datetime.utcnow() + timedelta(minutes=3)},
+                      worker.secret_key, algorithm="HS256")
+
+
+def validate_token(ref_key: str):
+    data = jwt.decode(ref_key, options={"verify_signature": False})
+    if 'id' not in data:
+        return False
+    worker = get_phishsite_by_id(data['id'])
+    print(worker)
+    if not worker:
+        return False
+    try:
+        jwt.decode(ref_key, worker.secret_key, algorithms=["HS256"])
+        return True
+    except Exception as e:
+        print(e)
+    return False
 
 
 async def ping_worker_by_id(id: int):
@@ -21,15 +45,7 @@ async def ping_worker_by_id(id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not Found"
         )
-    async with AsyncClient() as client:
-        try:
-            res = await client.post(worker.uri+'/ping', json={'ref_key': worker.secret_key, "ping": int(time()*1000)})
-            if res.status_code == 201:
-                res = res.json()
-                return {'sucess': True, 'ping': int(time()*1000)-res['pong']}
-        except Exception as e:
-            print(e)
-            return {'sucess': False}
+    return await ping_worker(worker)
 
 
 async def ping_worker(worker: Phishsite):
@@ -37,13 +53,16 @@ async def ping_worker(worker: Phishsite):
         return {'sucess': False}
     async with AsyncClient() as client:
         try:
-            res = await client.post(worker.uri+'/ping', json={'ref_key': worker.secret_key, "ping": int(time()*1000)})
+            ref_key = create_token(worker)
+            ping = int(time()*1000)
+            res = await client.post(worker.uri+'/ping', json={'ref_key': ref_key, "ping": ping})
             if res.status_code == 201:
                 res = res.json()
-                return {'sucess': True, 'ping': int(time()*1000)-res['pong']}
+                if ping == res['pong']:
+                    return {'sucess': True, 'ping': int(time()*1000)-ping}
         except Exception as e:
             print(e)
-            return {'sucess': False}
+    return {'sucess': False}
 
 
 def code(lang: str):

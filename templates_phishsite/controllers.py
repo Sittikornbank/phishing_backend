@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from auth import get_token, check_permission
+from auth import get_token, check_permission, check_token
 from schemas import Role
 import os
 import schemas
@@ -49,12 +49,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.get('/templates', response_model=schemas.TemplateListModel)
-def get_templates(page: int | None = 1, limit: int | None = 25, token: str = Depends(get_token)):
+async def get_templates(page: int | None = 1, limit: int | None = 25, token: str = Depends(get_token)):
+    await check_token(token)
     return models.get_all_templates(page=page, size=limit)
 
 
 @app.get('/templates/{temp_id}', response_model=schemas.TemplateDisplayModel)
-def get_template(temp_id: int, token: str = Depends(get_token)):
+async def get_template(temp_id: int, token: str = Depends(get_token)):
+    await check_token(token)
     temp = models.get_template_by_id(temp_id)
     if temp:
         return temp
@@ -359,23 +361,44 @@ async def del_phishsite(temp_id: int, token: str = Depends(get_token)):
 @app.get('/phishsites/{temp_id}/check')
 async def check_phishsite(temp_id: int, token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
-    return workers.ping_worker_by_id(temp_id)
+    return await workers.ping_worker_by_id(temp_id)
 
 
-@app.get('/phishsites/code')
-async def check_phishsite(token: str = Depends(get_token)):
+@app.get('/workers/code')
+async def check_phishsite(lang: str, token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
-    pass
-
-
-@app.get('/workers')
-async def handle_worker_get(req: Request):
-    body = await req.json()
+    return workers.code(lang)
 
 
 @app.post('/workers')
 async def handle_worker_post(req: Request):
     body = await req.json()
+    if body and 'ref_key' in body and 'ref_id' in body and 'event_type' in body:
+        if not workers.validate_token(body['ref_key']):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Not Found"
+            )
+        context = schemas.EventContext(ref_key=body['ref_key'],
+                                       ref_id=body['ref_id'],
+                                       event_type=body['event_type'])
+        if 'payload' in body and body['payload']:
+            context.payload = body['payload']
+        workers.process_event(context)
+        if body['event_type'] == schemas.Event.CLICK:
+            temp = workers.get_landing(context)
+            if temp:
+                return {'html': temp.html}
+        elif body['event_type'] == schemas.Event.SUBMIT:
+            temp = workers.get_landing(context)
+            if temp:
+                return {'redirect_url': temp.redirect_url}
+        else:
+            return {'success': True}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Not Found"
+    )
 
 
 def validate_and_set_image(temp_in:
