@@ -396,7 +396,7 @@ def validate_and_set_image(temp_in:
         print(e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid base64 encoding or "
+            detail="Invalid base64 encoding or format --> data:image/png;base64"
         )
 
     iname = ''.join(choices('abcdefghijklmnopqrstuvwxyz', k=8))
