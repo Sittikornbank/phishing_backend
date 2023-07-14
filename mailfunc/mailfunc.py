@@ -135,37 +135,27 @@ async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
     return {"message": "SMTP deleted"}
 
 
-# @app.get('/imap', response_model=IMAPListModel)
-# async def get_imap_configs():
-#     imap_configs = get_all_imap()
-#     if not imap_configs:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="IMAP not found")
-
-#     return imap_configs
-
 @app.get("/imap", response_model=IMAPListModel)
-async def get_imap_configss(page: int = None, limit: int = None):
-
+async def get_imap_configss(page: int | None = 1, limit: int | None = 25):
     imap_data = get_imap()
     if not imap_data:
         return IMAPListModel()
+    return models.get_all_imap(page=page, size=limit)
 
-    if page and page < 0:
-        page = 1
-    if limit and limit < 1:
-        limit = 25
-# if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"imap": []}
-    imap_configs = get_all_imap(page, limit)
-    if imap_configs and 'imap' in imap_configs:  # show get_all_smtp
-        return IMAPListModel(
-            count=imap_configs['count'],
-            page=imap_configs['page'],
-            last_page=(imap_configs['count'] // imap_configs['limit']) + 1,
-            limit=imap_configs['limit'],
-            imap=imap_configs['imap']
-        )
+#     if page and page < 0:
+#         page = 1
+#     if limit and limit < 1:
+#         limit = 25
+# # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"imap": []}
+#     imap_configs = get_all_imap(page, limit)
+#     if imap_configs and 'imap' in imap_configs:  # show get_all_smtp
+#         return IMAPListModel(
+#             count=imap_configs['count'],
+#             page=imap_configs['page'],
+#             last_page=(imap_configs['count'] // imap_configs['limit']) + 1,
+#             limit=imap_configs['limit'],
+#             imap=imap_configs['imap']
+#         )
 
 
 @app.get('/imap/{userid}', response_model=IMAPDisplayModel)
