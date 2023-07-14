@@ -207,8 +207,9 @@ def update_imap(db: Session, user_id: int, imap: dict):
 def delete_smtp(db: Session, id: int):
     db: Session = next(get_db())
     try:
-        db.query(SMTP).filter(SMTP.id == id).delete()
+        c = db.query(SMTP).filter(SMTP.id == id).delete()
         db.commit()
+        return c > 0
     except Exception as e:
         print(e)
     return
@@ -217,9 +218,9 @@ def delete_smtp(db: Session, id: int):
 def delete_imap(db: Session, user_id: int):
     db: Session = next(get_db())
     try:
-        db.query(IMAP).filter(IMAP.user_id == user_id).delete()
+        c = db.query(IMAP).filter(IMAP.user_id == user_id).delete()
         db.commit()
-        return True
+        return c > 0
     except Exception as e:
         print(e)
     return

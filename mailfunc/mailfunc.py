@@ -31,33 +31,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# @app.get('/smtp')
-# @app.get('/smtp/{userid}')
 
-
-# @app.post('/smtp}')
-# @app.put('/smtp/{userid}')
-
-
-# @app.delete('/smtp/{userid}')
-# @app.get('/smtp/{userid}/check')
-
-
-# @app.get('/imap/')
-# @app.get('/imap/{userid}')
-
-
-# @app.post('/imap')
-# @app.put('/imap/{userid}')
-# @app.delete('/imap/{userid}')
-# @app.get('/imap/{userid}')
-# @app.get('/imap/{userid}/check')
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     detail = ""
     try:
-        # detail = str(exc.errors())
         detail = exc.errors()[0]['loc'][-1]+','+exc.errors()[0]['msg']
     except Exception as e:
         print(e)
@@ -68,10 +47,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.get("/smtp", response_model=schemas.SMTPListModel)
 async def get_smtp_configss(page: int | None = 1, limit: int | None = 25):
-    smtp_data = get_smtp()
-    if not smtp_data:
-        return SMTPListModel()
-# if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
     return models.get_all_smtp(page=page, size=limit)
 
 
@@ -85,10 +60,10 @@ async def get_smtp_config(userid: int):
     return smtp_config
 
 
-@app.post("/smtp")
+@app.post("/smtp", response_model=SMTPDisplayModel)
 async def create_smtp_config(s: SMTPModel):
     form_smtp = SMTPDisplayModel(user_id=s.user_id,
-                                 interface_type=s.interface_type,
+                                 interface_type="smtp",
                                  name=s.name,
                                  host=s.host,
                                  username=s.username,
@@ -97,15 +72,7 @@ async def create_smtp_config(s: SMTPModel):
                                  ignore_cert_errors=s.ignore_cert_errors)
     s = create_smtp(form_smtp)
     if s:
-        return {
-            'interface_type': s.interface_type,
-            'name': s.name,
-            'host': s.host,
-            'username': s.username,
-            'password': s.password,
-            'from_address': s.from_address,
-            'ignore_cert_errors': s.ignore_cert_errors
-        }
+        return s
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="invalid smtp format")
@@ -115,47 +82,30 @@ async def create_smtp_config(s: SMTPModel):
 async def update_smtp_config(
     userid: int, smtp: SMTPFormModel, db: Session = Depends(get_db)
 ):
-    existing_smtp = get_all_imap(userid)
-    if not existing_smtp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="SMTP not found")
     updated_smtp = update_smtp(db, userid, smtp.dict(exclude_unset=True))
-    return updated_smtp
+    if updated_smtp:
+        return updated_smtp
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="SMTP not found")
 
 
 @app.delete("/smtp/{userid}")
 async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
     existing_smtp = get_smtp_id(userid)
-    if not existing_smtp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="SMTP not found")
-    delete_smtp(db, userid)
-    return {"message": "SMTP deleted"}
+
+    c = delete_smtp(db, userid)
+    if c:
+        return {'success': c}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="SMTP not found")
 
 
 @app.get("/imap", response_model=IMAPListModel)
 async def get_imap_configss(page: int | None = 1, limit: int | None = 25):
-    imap_data = get_imap()
-    if not imap_data:
-        return IMAPListModel()
     return models.get_all_imap(page=page, size=limit)
-
-#     if page and page < 0:
-#         page = 1
-#     if limit and limit < 1:
-#         limit = 25
-# # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"imap": []}
-#     imap_configs = get_all_imap(page, limit)
-#     if imap_configs and 'imap' in imap_configs:  # show get_all_smtp
-#         return IMAPListModel(
-#             count=imap_configs['count'],
-#             page=imap_configs['page'],
-#             last_page=(imap_configs['count'] // imap_configs['limit']) + 1,
-#             limit=imap_configs['limit'],
-#             imap=imap_configs['imap']
-#         )
 
 
 @app.get('/imap/{userid}', response_model=IMAPDisplayModel)
@@ -168,7 +118,7 @@ async def get_imap_config(userid: int):
     return imap_config
 
 
-@app.post('/imap')
+@app.post('/imap', response_model=IMAPModel)
 async def create_imap_config(imap: IMAPModel):
     form_imap = IMAPDisplayModel(user_id=imap.user_id,
                                  enabled=imap.enabled,
@@ -186,17 +136,6 @@ async def create_imap_config(imap: IMAPModel):
     created_imap = create_imap(form_imap)
     if created_imap:
         return created_imap
-    # i = create_imap(form_imap)
-    # if i:
-    #     return {
-    #         'interface_type': i.interface_type,
-    #         'name': i.name,
-    #         'host': i.host,
-    #         'username': i.username,
-    #         'password': i.password,
-    #         'from_address': i.from_address,
-    #         'ignore_cert_errors': i.ignore_cert_errors
-    #     }
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid IMAP format")
@@ -205,23 +144,21 @@ async def create_imap_config(imap: IMAPModel):
 @app.put('/imap/{userid}', response_model=IMAPDisplayModel)
 async def update_imap_config(
         userid: int, imap: IMAPFormModel, db: Session = Depends(get_db)):
-    existing_imap = get_imap_id(userid)
-    if not existing_imap:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="IMAP not found")
     updated_imap = update_imap(db, userid, imap.dict(exclude_unset=True))
-    return updated_imap
+    if updated_imap:
+        return updated_imap
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="IMAP not found")
 
 
 @app.delete('/imap/{userid}')
 async def delete_imap_config(userid: int, db: Session = Depends(get_db)):
-    existing_imap = get_imap_id(userid)
-    if not existing_imap:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="IMAP not found")
-    delete_imap(db, userid)
-    return {"message": "IMAP deleted"}
+    c = delete_imap(db, userid)
+    if c:
+        return {"success": c}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail="IMAP not found")
 
 
 @app.get('/imap/{userid}/check')
@@ -241,12 +178,12 @@ if __name__ == "__main__":
     existing_smtp = get_smtp_id(1)
     if not existing_smtp:
         create_smtp(SMTPDisplayModel(
-            user_id=1,
+            user_id=-1,
             interface_type="smtp",
-            name="My SMTP Server",
-            host="smtp.example.com",
-            username="my_username",
-            password="my_password",
+            name=os.getenv('DEV_NAME'),
+            host=os.getenv('DEV_HOST'),
+            username=os.getenv('DEV_USERNAME'),
+            password=os.getenv('DEV_PASSWORD'),
             from_address="noreply@example.com",
             ignore_cert_errors=1
         ))

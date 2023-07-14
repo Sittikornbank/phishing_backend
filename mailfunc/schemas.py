@@ -3,6 +3,20 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 
+class Role(str, Enum):
+    GUEST = 'guest'
+    PAID = 'paid'
+    AUDITOR = 'auditor'
+    ADMIN = 'admin'
+    SUPER = 'superadmin'
+
+
+class AuthContext(BaseModel):
+    id: int
+    role: Role = Role.GUEST
+    organization: int = 0
+
+
 class Session(BaseModel):
     id: int
     token: str
@@ -12,7 +26,7 @@ class Session(BaseModel):
 class SMTPModel(BaseModel):
     id: int | None = None
     user_id: int | None = None
-    interface_type: str = Field(min_length=1, max_length=128)
+    interface_type: str = "smtp"
     name: str = Field(min_length=1, max_length=128)
     host: str = Field(min_length=1, max_length=128)
     username: str = Field(min_length=1, max_length=128)
@@ -58,20 +72,6 @@ class SMTPListModel(BaseModel):
     last_page: int = 1
     limit: int = 25
     smtp: list[SMTPDisplayModel] = []
-    # user_id = Column(Integer, primary_key=True)
-    # enabled = Column(Boolean, default=True)
-    # host = Column(String(64))
-    # port = Column(Integer)
-    # username = Column(String(64), nullable=False)
-    # password = Column(String(2048), nullable=False)
-    # tls = Column(Boolean, default=True)
-    # ignore_cert_errors = Column(Boolean, default=True)
-    # folder = Column(String(128))
-    # restrict_domain = Column(String(128))
-    # delete_reported_campaign_email = Column(Boolean, default=True)
-    # last_login = Column(DateTime)
-    # modified_date = Column(DateTime(), default=datetime.now())
-    # imap_freq = Column(Integer)
 
 
 class IMAPModel(BaseModel):
