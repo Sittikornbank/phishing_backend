@@ -58,7 +58,7 @@ class SMTPFormModel(SMTPModel):
     # headers: str | None = None
 
 
-class SMTPDisplayModel(SMTPModel):
+class SMTPDisplayModel(BaseModel):
     id: int | None = None
     user_id: int | None = None
     org_id: int | None

@@ -55,7 +55,7 @@ async def auth_token(req: Request):
     return await check_token(token)
 
 
-async def auth_permission(auth: AuthContext, roles: tuple[Role]):
+def auth_permission(auth: AuthContext, roles: tuple[Role]):
     if auth.role not in roles:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

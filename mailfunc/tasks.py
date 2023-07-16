@@ -1,4 +1,5 @@
 import threading
+import asyncio
 import os
 import time
 import jinja2
@@ -15,19 +16,23 @@ CALLBACK_URI = os.getenv('CALLBACK_URI')
 API_KEY = os.getenv('API_KEY')
 environment = jinja2.Environment()
 
+tasks_dict = dict()
+
 
 async def update_status(data: dict):
-    async with AsyncClient() as client:
-        try:
-            data.update({'api_key': API_KEY})
-            data.update({'timestamp': time.time()})
-            res = await client.post(CALLBACK_URI, json=data)
-            auth = res.json()
-            if res.status_code == 200:
-                return True
-        except Exception as e:
-            print(e)
-    return False
+    # async with AsyncClient() as client:
+    #     try:
+    #         data.update({'api_key': API_KEY})
+    #         data.update({'timestamp': time.time()})
+    #         res = await client.post(CALLBACK_URI, json=data)
+    #         auth = res.json()
+    #         if res.status_code == 200:
+    #             return True
+    #     except Exception as e:
+    #         print(e)
+    # return False
+    print(data)
+    return True
 
 
 def render_template(template: str, target: Target):
@@ -68,15 +73,15 @@ async def send_email_task(task: TaskModel, smtp: SMTP):
     else:
         delay = 0
     await update_status(
-        {'task_id': task.task_id, 'status': Status.RUNNING, 'sent': 0})
+        {'task_id': task.task_id, 'status': task.status, 'sent': 0})
     for i, t in enumerate(task.targets):
         time.sleep(delay)
-        sub = render_template(task.subject)
-        msg = render_template(task.html)
+        sub = render_template(task.subject, t)
+        msg = render_template(task.html, t)
         if send_email(t.email, sub, msg, task.sender, task.attachments, smtp):
             task.sent += 1
             await update_status(
-                {'task_id': task.task_id, 'status': Status.RUNNING, 'sent': task.sent})
+                {'task_id': task.task_id, 'status': task.status, 'sent': task.sent, 'to_email': t.email})
         else:
             task.status = Status.FAIL
             await update_status(
@@ -86,3 +91,17 @@ async def send_email_task(task: TaskModel, smtp: SMTP):
         task.status = Status.COMPLETE
     await update_status(
         {'task_id': task.task_id, 'status': task.status, 'sent': task.sent})
+
+
+def task_warpper(task: TaskModel, smtp: SMTP):
+    asyncio.run(send_email_task(task, smtp))
+
+
+async def create_and_start_task(task: TaskModel, smtp: SMTP):
+    try:
+        t = threading.Thread(target=task_warpper, args=(task, smtp))
+        t.start()
+        return t.is_alive()
+    except Exception as e:
+        print(e)
+    return False

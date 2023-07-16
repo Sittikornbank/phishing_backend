@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from schemas import (SMTPDisplayModel, SMTPFormModel,
                      SMTPModel, IMAPDisplayModel, IMAPFormModel,
-                     IMAPModel, SMTPListModel, IMAPListModel, AuthContext, Role)
+                     IMAPModel, SMTPListModel, IMAPListModel, AuthContext, Role,
+                     TaskModel)
 from models import (Base, engine)
 from dotenv import load_dotenv
 from auth import auth_token, auth_permission
@@ -167,7 +168,7 @@ async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
         detail="SMTP not found")
 
 
-@app.get('/smtp/{id}/test')
+@app.get('/smtp/{id}/check')
 async def test_smtp(id: int, auth: AuthContext = Depends(auth_token)):
     auth_permission(auth, roles=(
         Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
@@ -177,15 +178,15 @@ async def test_smtp(id: int, auth: AuthContext = Depends(auth_token)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SMTP not found")
     if auth.role == Role.SUPER:
-        result = tasks.send_test_email(s)
+        result = await tasks.send_test_email(s)
         return {'success': result}
     elif auth.role == Role.ADMIN:
         if s and s.org_id == auth.organization:
-            result = tasks.send_test_email(s)
+            result = await tasks.send_test_email(s)
             return {'success': result}
     elif auth.role == Role.GUEST or auth.role == Role.PAID:
         if s and s.user_id == auth.id:
-            result = tasks.send_test_email(s)
+            result = await tasks.send_test_email(s)
             return {'success': result}
 
     raise HTTPException(
@@ -193,7 +194,7 @@ async def test_smtp(id: int, auth: AuthContext = Depends(auth_token)):
         detail="SMTP not found")
 
 
-@app.get('/test/smtp')
+@app.get('/check/smtp')
 async def test_smtp(smtp: SMTPModel, auth: AuthContext = Depends(auth_token)):
     auth_permission(auth, roles=(
         Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
@@ -273,19 +274,30 @@ async def check_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
     return {"message": "IMAP configuration is valid"}
 
 
+@app.post("/mails")
+async def create_and_start_task(task: TaskModel):
+    smtp = models.get_smtp_id(task.smtp_id)
+    if not smtp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SMTP Not Found")
+    res = await tasks.create_and_start_task(task, smtp)
+    return {'success': res}
+
 if __name__ == "__main__":
     # Check if SMTP configuration with user_id=1 already exists
     existing_smtp = models.get_smtp_id(1)
     if not existing_smtp:
         models.create_smtp(SMTPDisplayModel(
-            user_id=-1,
+            user_id=None,
+            org_id=None,
             interface_type="smtp",
             name=os.getenv('DEV_NAME'),
             host=os.getenv('DEV_HOST'),
             username=os.getenv('DEV_USERNAME'),
             password=os.getenv('DEV_PASSWORD'),
             from_address="noreply@example.com",
-            ignore_cert_errors=1
+            ignore_cert_errors=True
         ))
 
     uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
