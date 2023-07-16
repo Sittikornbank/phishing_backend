@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from auth import auth_token, auth_permission
 import os
 import models
+import tasks
 
 app = FastAPI()
 
@@ -164,6 +165,40 @@ async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="SMTP not found")
+
+
+@app.get('/smtp/{id}/test')
+async def test_smtp(id: int, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    s = models.get_smtp_id(id)
+    if not s:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SMTP not found")
+    if auth.role == Role.SUPER:
+        result = tasks.send_test_email(s)
+        return {'success': result}
+    elif auth.role == Role.ADMIN:
+        if s and s.org_id == auth.organization:
+            result = tasks.send_test_email(s)
+            return {'success': result}
+    elif auth.role == Role.GUEST or auth.role == Role.PAID:
+        if s and s.user_id == auth.id:
+            result = tasks.send_test_email(s)
+            return {'success': result}
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="SMTP not found")
+
+
+@app.get('/test/smtp')
+async def test_smtp(smtp: SMTPModel, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    result = tasks.send_test_email(smtp)
+    return {'success': result}
 
 
 @app.get("/imap", response_model=IMAPListModel)

@@ -11,6 +11,13 @@ class Role(str, Enum):
     SUPER = 'superadmin'
 
 
+class Status(str, Enum):
+    IDLE = 'idle'
+    RUNNING = 'running'
+    COMPLETE = 'complete'
+    FAIL = 'fail'
+
+
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
@@ -137,3 +144,25 @@ class IMAPListModel(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class Target(BaseModel):
+    ref: str
+    firstname: str
+    lastname: str
+    position: str
+    phonenumber: str
+    email: str
+
+
+class TaskModel(BaseModel):
+    task_id: int = Field(gt=0)
+    smtp_id: int = Field(gt=0)
+    subject: str = ""
+    sender: str = ""
+    html: str = ""
+    attachments: list[str] = []
+    status: Status = Status.IDLE
+    sent: int = 0
+    duration: int = Field(gt=0)
+    targets: list[Target] = []
