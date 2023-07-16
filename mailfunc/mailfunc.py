@@ -4,7 +4,7 @@ from fastapi import Request, FastAPI, status, HTTPException, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from datetime import datetime
 from schemas import (SMTPDisplayModel, SMTPFormModel,
                      SMTPModel, IMAPDisplayModel, IMAPFormModel,
                      IMAPModel, SMTPListModel, IMAPListModel, AuthContext, Role)
@@ -43,20 +43,32 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.get("/smtp", response_model=SMTPListModel)
-async def get_smtp_configss(
+async def get_smtp_configs(
         page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return models.get_all_smtp(page=page, size=limit)
     elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
-        return models.get_all_smtp(page=page, size=limit)
-    return models.get_all_smtp(page=page, size=limit)
+        return models.get_smtps_by_org(id=auth.organization, page=page, size=limit, include_none=True)
+    return models.get_smtps_by_user(id=auth.id, page=page, size=limit, include_none=True)
 
 
 @app.get("/smtp/{id}", response_model=SMTPDisplayModel)
 async def get_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
-
     smtp_config = models.get_smtp_id(id)
     if not smtp_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SMTP not found")
+    if auth.role == Role.SUPER:
+        return smtp_config
+    elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+        if smtp_config.org_id != None and smtp_config.org_id != auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="SMTP not found")
+        return smtp_config
+    elif smtp_config.org_id != None or (
+            smtp_config.user_id != None and smtp_config.user_id != auth.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SMTP not found")
@@ -64,19 +76,38 @@ async def get_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
 
 
 @app.post("/smtp", response_model=SMTPDisplayModel)
-async def create_smtp_config(s: SMTPModel, auth: AuthContext = Depends(auth_token)):
+async def create_smtp_config(smtp: SMTPModel, auth: AuthContext = Depends(auth_token)):
+    smtp.modified_date = datetime.now()
+    smtp.interface_type = 'smtp'
+    if auth.role == Role.SUPER:
+        smtp = models.create_smtp(smtp)
+        if smtp:
+            return smtp
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid smtp format")
 
-    form_smtp = SMTPDisplayModel(user_id=s.user_id,
-                                 interface_type="smtp",
-                                 name=s.name,
-                                 host=s.host,
-                                 username=s.username,
-                                 password=s.password,
-                                 from_address=s.from_address,
-                                 ignore_cert_errors=s.ignore_cert_errors)
-    s = models.create_smtp(form_smtp)
-    if s:
-        return s
+    smtp.user_id = auth.id
+    smtp.org_id = None
+    if auth.role == Role.ADMIN:
+        smtp.org_id = auth.organization
+    elif auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED")
+    elif auth.role == Role.PAID:
+        if models.count_smtp_by_user(auth.id) >= 3:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="already at maximum number of sending profiles")
+    elif auth.role == Role.GUEST:
+        if models.count_smtp_by_user(auth.id) >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="already at maximum number of sending profiles")
+    smtp = models.create_smtp(smtp)
+    if smtp:
+        return smtp
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="invalid smtp format")
@@ -85,10 +116,24 @@ async def create_smtp_config(s: SMTPModel, auth: AuthContext = Depends(auth_toke
 @app.put("/smtp/{id}", response_model=SMTPDisplayModel)
 async def update_smtp_config(
         id: int, smtp: SMTPFormModel, auth: AuthContext = Depends(auth_token)):
-
-    updated_smtp = models.update_smtp(smtp.dict(exclude_unset=True))
-    if updated_smtp:
-        return updated_smtp
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    if auth.role == Role.SUPER:
+        s = models.update_smtp(id, smtp.dict(exclude_unset=True))
+        if s:
+            return s
+    elif auth.role == Role.ADMIN:
+        s = models.get_smtp_id(id)
+        if s and s.org_id == auth.organization:
+            s = models.update_smtp(id, smtp.dict(exclude_unset=True))
+            if s:
+                return s
+    elif auth.role == Role.GUEST or auth.role == Role.PAID:
+        s = models.get_smtp_id(id)
+        if s and s.user_id == auth.id:
+            s = models.update_smtp(id, smtp.dict(exclude_unset=True))
+            if s:
+                return s
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -97,10 +142,25 @@ async def update_smtp_config(
 
 @app.delete("/smtp/{id}")
 async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    if auth.role == Role.SUPER:
+        s = models.delete_smtp(id)
+        if s:
+            return {'success': s}
+    elif auth.role == Role.ADMIN:
+        s = models.get_smtp_id(id)
+        if s and s.org_id == auth.organization:
+            s = models.delete_smtp(id)
+            if s:
+                return {'success': s}
+    elif auth.role == Role.GUEST or auth.role == Role.PAID:
+        s = models.get_smtp_id(id)
+        if s and s.user_id == auth.id:
+            s = models.delete_smtp(id)
+            if s:
+                return {'success': s}
 
-    c = models.delete_smtp(id)
-    if c:
-        return {'success': c}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="SMTP not found")

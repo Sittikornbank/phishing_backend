@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from schemas import SMTPDisplayModel, SMTPListModel, IMAPListModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
+from schemas import SMTPModel, SMTPListModel, IMAPListModel, SMTPFormModel, IMAPModel, IMAPDisplayModel
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -21,7 +21,8 @@ class SMTP(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer)
-    interface_type = Column(String(64))
+    org_id = Column(Integer)
+    interface_type = Column(String(64), default='smtp')
     name = Column(String(64))
     host = Column(String(64))
     username = Column(String(64), nullable=False)
@@ -35,6 +36,7 @@ class IMAP(Base):
     __tablename__ = "imap"
 
     user_id = Column(Integer, primary_key=True)
+    org_id = Column(Integer)
     enabled = Column(Boolean, default=True)
     host = Column(String(64), nullable=False)
     port = Column(Integer)
@@ -98,24 +100,6 @@ def get_all_imap(page: int | None = None, size: int | None = None):
     return IMAPListModel()
 
 
-# def get_smtp():
-#     db: Session = next(get_db())
-#     try:
-#         return db.query(SMTP).all()
-#     except Exception as e:
-#         print(e)
-#     return
-
-
-# def get_imap():
-#     db: Session = next(get_db())
-#     try:
-#         return db.query(IMAP).all()
-#     except Exception as e:
-#         print(e)
-#     return
-
-
 def get_smtp_id(id: int):
     db: Session = next(get_db())
     try:
@@ -134,10 +118,74 @@ def get_imap_id(user_id: int):
     return
 
 
-def create_smtp(smtp: SMTPDisplayModel):
+def get_smtps_by_user(id: int, page: int | None = None, size: int | None = None, include_none: bool = False):
+    db: Session = next(get_db())
+    try:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        if include_none:
+            smtps = db.query(SMTP).filter(
+                SMTP.user_id == id or SMTP.user_id == None).limit(size).offset(size*(page-1)).all()
+            count = db.query(SMTP).filter(
+                SMTP.user_id == id or SMTP.user_id == None).count()
+        smtps = db.query(SMTP).filter(
+            SMTP.user_id == id).limit(size).offset(size*(page-1)).all()
+        count = db.query(SMTP).filter(
+            SMTP.user_id == id).count()
+
+        return SMTPListModel(count=count,
+                             page=page,
+                             limit=size,
+                             last_page=(count//size)+1,
+                             smtp=smtps)
+    except Exception as e:
+        print(e)
+    return SMTPListModel()
+
+
+def get_smtps_by_org(id: int, page: int | None = None, size: int | None = None, include_none: bool = False):
+    db: Session = next(get_db())
+    try:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        if include_none:
+            smtps = db.query(SMTP).filter(
+                SMTP.org_id == id or SMTP.org_id == None).limit(size).offset(size*(page-1)).all()
+            count = db.query(SMTP).filter(
+                SMTP.org_id == id or SMTP.org_id == None).count()
+        smtps = db.query(SMTP).filter(
+            SMTP.org_id == id).limit(size).offset(size*(page-1)).all()
+        count = db.query(SMTP).filter(
+            SMTP.org_id == id).count()
+
+        return SMTPListModel(count=count,
+                             page=page,
+                             limit=size,
+                             last_page=(count//size)+1,
+                             smtp=smtps)
+    except Exception as e:
+        print(e)
+    return SMTPListModel()
+
+
+def count_smtp_by_user(user_id: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(SMTP).filter(SMTP.user_id == user_id).count()
+    except Exception as e:
+        print(e)
+    return 0
+
+
+def create_smtp(smtp: SMTPModel):
     db: Session = next(get_db())
     try:
         send = SMTP(user_id=smtp.user_id,
+                    org_id=smtp.org_id,
                     interface_type=smtp.interface_type,
                     name=smtp.name,
                     host=smtp.host,

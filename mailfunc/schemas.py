@@ -26,19 +26,21 @@ class Session(BaseModel):
 class SMTPModel(BaseModel):
     id: int | None = None
     user_id: int | None = None
+    org_id: int | None = None
     interface_type: str = "smtp"
     name: str = Field(min_length=1, max_length=128)
     host: str = Field(min_length=1, max_length=128)
     username: str = Field(min_length=1, max_length=128)
     password: str = Field(min_length=1, max_length=128)
     from_address: str = Field(min_length=1, max_length=128)
-    ignore_cert_errors: bool | None = None
+    ignore_cert_errors: bool
     # headers: str
     modified_date: datetime = datetime.now()
 
 
 class SMTPFormModel(SMTPModel):
     user_id: int | None = None
+    org_id: int | None = None
     interface_type: str | None = None
     name: str | None = None
     host: str | None = None
@@ -47,17 +49,16 @@ class SMTPFormModel(SMTPModel):
     from_address: str | None = None
     ignore_cert_errors: bool | None = None
     # headers: str | None = None
-    modified_date: datetime | None = None
 
 
 class SMTPDisplayModel(SMTPModel):
     id: int | None = None
     user_id: int | None = None
+    org_id: int | None
     interface_type: str | None = None
     name: str | None = None
     host: str | None = None
     username: str | None = None
-    password: str | None = None
     from_address: str | None = None
     ignore_cert_errors: bool | None = None
     modified_date: datetime = datetime.now()
@@ -73,10 +74,13 @@ class SMTPListModel(BaseModel):
     limit: int = 25
     smtp: list[SMTPDisplayModel] = []
 
+    class Config:
+        orm_mode = True
+
 
 class IMAPModel(BaseModel):
-
     user_id: int | None = None
+    org_id: int | None = None
     enabled: bool | None = None
     host: str = Field(min_length=1, max_length=128)
     port: int | None = None
@@ -93,12 +97,24 @@ class IMAPModel(BaseModel):
 
 
 class IMAPFormModel(IMAPModel):
-
     enabled: bool | None = None
     host: str | None = None
     port: int | None = None
     username: str | None = None
     password: str | None = None
+    tls: bool | None = None
+    ignore_cert_errors: bool | None = None
+    folder: str | None = None
+    restrict_domain: str | None = None
+    delete_reported_campaign_email: bool | None = None
+    imap_freq: int | None = None
+
+
+class IMAPDisplayModel(IMAPModel):
+    enabled: bool | None = None
+    host: str | None = None
+    port: int | None = None
+    username: str | None = None
     tls: bool | None = None
     ignore_cert_errors: bool | None = None
     folder: str | None = None
@@ -106,23 +122,6 @@ class IMAPFormModel(IMAPModel):
     delete_reported_campaign_email: bool | None = None
     last_login: datetime | None = None
     modified_date: datetime | None = None
-    imap_freq: int | None = None
-
-
-class IMAPDisplayModel(IMAPModel):
-    user_id: int | None = None
-    enabled: bool | None = None
-    host: str | None = None
-    port: int | None = None
-    username: str | None = None
-    password: str | None = None
-    tls: bool | None = None
-    ignore_cert_errors: bool | None = None
-    folder: str | None = None
-    restrict_domain: str | None = None
-    delete_reported_campaign_email: bool | None = None
-    last_login: datetime | None = None
-    modified_date: datetime = datetime.now()
     imap_freq: int | None = None
 
     class Config:
@@ -135,3 +134,6 @@ class IMAPListModel(BaseModel):
     last_page: int = 1
     limit: int = 25
     imap: list[IMAPDisplayModel] = []
+
+    class Config:
+        orm_mode = True
