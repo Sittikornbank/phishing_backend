@@ -178,15 +178,15 @@ async def test_smtp(id: int, auth: AuthContext = Depends(auth_token)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SMTP not found")
     if auth.role == Role.SUPER:
-        result = await tasks.send_test_email(s)
+        result = tasks.send_test_email(s)
         return {'success': result}
     elif auth.role == Role.ADMIN:
         if s and s.org_id == auth.organization:
-            result = await tasks.send_test_email(s)
+            result = tasks.send_test_email(s)
             return {'success': result}
     elif auth.role == Role.GUEST or auth.role == Role.PAID:
         if s and s.user_id == auth.id:
-            result = await tasks.send_test_email(s)
+            result = tasks.send_test_email(s)
             return {'success': result}
 
     raise HTTPException(

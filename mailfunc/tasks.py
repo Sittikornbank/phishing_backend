@@ -20,19 +20,17 @@ tasks_dict = dict()
 
 
 async def update_status(data: dict):
-    # async with AsyncClient() as client:
-    #     try:
-    #         data.update({'api_key': API_KEY})
-    #         data.update({'timestamp': time.time()})
-    #         res = await client.post(CALLBACK_URI, json=data)
-    #         auth = res.json()
-    #         if res.status_code == 200:
-    #             return True
-    #     except Exception as e:
-    #         print(e)
-    # return False
     print(data)
-    return True
+    async with AsyncClient() as client:
+        try:
+            data.update({'api_key': API_KEY})
+            data.update({'timestamp': time.time()})
+            res = await client.post(CALLBACK_URI, json=data)
+            if res.status_code == 200:
+                return True
+        except Exception as e:
+            print(e)
+    return False
 
 
 def render_template(template: str, target: Target):
@@ -49,7 +47,7 @@ def send_email(to_email: str, subject: str, message: str, sender: str, att: list
             msg['From'] = smtp.username
         msg['To'] = to_email
         msg['Subject'] = subject
-        msg.attach(MIMEText(message, 'plain'))
+        msg.attach(MIMEText(message, 'html'))
 
         with smtplib.SMTP(smtp.host, 587) as server:
             server.starttls()
@@ -62,7 +60,7 @@ def send_email(to_email: str, subject: str, message: str, sender: str, att: list
 
 
 def send_test_email(smtp: SMTP):
-    return send_email(smtp.username, "Test Email Working!", "It's working", smtp.username, [], smtp)
+    return send_email(smtp.username, "Test Email Working!", "<h1>It's working</h1>", smtp.username, [], smtp)
 
 
 async def send_email_task(task: TaskModel, smtp: SMTP):
