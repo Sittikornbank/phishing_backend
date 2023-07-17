@@ -30,13 +30,13 @@ class CampaignSchema(BaseModel):
     org_id: int = 0
     name: str = ""
     create_date: datetime = datetime.now()
-    complate: datetime = datetime.now()
+    complate: datetime | None
     templates_id: int | None = None
     status: Status = Status.IDLE
     url: str = ""
     smtp_id: int | None = None
-    launch_date: datetime | None = None
-    send_by_date: datetime | None = None
+    launch_date: datetime = datetime.now()
+    send_by_date: datetime = datetime.now()
 
 
 class EmailSchema(BaseModel):
@@ -59,7 +59,7 @@ class SMTPModel(BaseModel):
 
 
 class Target(BaseModel):
-    ref: str
+    ref: str = ''
     firstname: str = ''
     lastname: str = ''
     position: str = ''
@@ -67,7 +67,7 @@ class Target(BaseModel):
     email: str
 
 
-class TaskModel(BaseModel):
+class EmailReqModel(BaseModel):
     task_id: int = Field(gt=0)
     smtp_id: int = Field(gt=0)
     subject: str = ""
@@ -75,9 +75,15 @@ class TaskModel(BaseModel):
     html: str = ""
     attachments: list[str] = []
     status: Status = Status.IDLE
-    sent: int = 0
-    duration: int = Field(gt=0)
+    duration: int | None = Field(gt=0)
     targets: list[Target] = []
+
+
+class TemplateReqModel(BaseModel):
+    task_ref: str
+    refs: list[str]
+    template_id: int
+    start_at: int
 
 
 class BaseReportContext(BaseModel):
@@ -93,3 +99,24 @@ class SiteStatus(BaseReportContext):
 
 class EmailStatus(BaseReportContext):
     task_id: int
+
+
+class LaunchModel(BaseModel):
+    auth: AuthContext
+    campaign: CampaignSchema
+    targets: list[Target]
+
+
+class CampaignManager(BaseModel):
+    id: int | None
+    ref: str
+    mail_sent: int = 0
+    mail_open: int = 0
+    mail_click: int = 0
+    mail_submit: int = 0
+    start_date: datetime | None
+    end_date: datetime | None
+    email_template: EmailSchema | None = None
+    smtp: SMTPModel | None = None
+    targets: list[Target] = []
+    target_index: int = 0
