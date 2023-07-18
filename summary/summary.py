@@ -1,19 +1,22 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from datetime import datetime
+from typing import List
+from fastapi import FastAPI
+from sqlalchemy.orm import Session
 import uvicorn
 from fastapi import Request, FastAPI
 from fastapi import Request, FastAPI, status, HTTPException, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from datetime import datetime
-from schemas import (CampaignDisplayModel, CampaignFormModel,
-                     CampaignListModel, CampaignModel)
-from models import (Base, engine, get_db, get_all_campaigns,
-                    get_campaign, get_campaign_by_id, create_campaign, delete_campaign, get_campaign_by_id)
+from models import (Base, engine, get_db, get_group_by_id, create_group)
 import os
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
-import models
 import schemas
+import models
+
 app = FastAPI()
 
 load_dotenv()
@@ -43,70 +46,119 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
-@app.get("/campaign", response_model=schemas.CampaignListModel)
-async def get_smtp_configss(page: int | None = 1, limit: int | None = 25):
-    smtp_data = get_campaign()
-    if not smtp_data:
-        return CampaignListModel()
-# if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
-    return models.get_all_campaigns(page=page, size=limit)
+@app.get("/groups", response_model=schemas.GroupListModel)
+async def get_group_configss(page: int | None = 1, limit: int | None = 25):
+    # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
+    return models.get_all_group(page=page, size=limit)
 
 
-@app.get("/campaign/{userid}", response_model=CampaignDisplayModel)
-async def get_smtp_config(userid: int):
-    smtp_config = get_campaign_by_id(userid)
-    if not smtp_config:
+@app.get("/groups/{id}", response_model=schemas.GroupDisplayModel)
+async def get_group_config(id: int):
+    group_config = get_group_by_id(id)
+    if not group_config:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="campaign not found")
-    return smtp_config
+            detail="group not found")
+    return group_config
 
 
-@app.post("/campaign")
-async def create_smtp_config(s: CampaignModel):
-    form_smtp = CampaignDisplayModel(user_id=s.user_id,
-                                     name=s.name,
-                                     templates_id=s.templates_id,
-                                     status=s.status,
-                                     url=s.url,
-                                     smtp_id=s.smtp_id)
-    s = create_campaign(form_smtp)
-    if s:
-        return {
-            'name': s.name,
-            'templates_id': s.templates_id,
-            'status': s.status,
-            'url': s.url,
-            'smtp_id': s.smtp_id
-        }
+@app.post("/groups", response_model=schemas.GroupDisplayModel)
+async def create_group_config(temp_in: schemas.GroupDisplayModel):
+    temp_in.modified_date = datetime.now()
+    gs = models.create_group(temp_in)
+    if gs:
+        return gs
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="invalid smtp format")
+        detail="Invalid group format"
+    )
 
 
-@app.delete("/campaign/{userid}")
-async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
-    existing_smtp = get_campaign_by_id(userid)
-    if not existing_smtp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="campaign not found")
-    delete_campaign(db, userid)
-    return {"message": "campaign deleted"}
+@app.put('/groups/{id}', response_model=schemas.GroupDisplayModel)
+async def modify_group(id: int, temp_in: schemas.GroupFormModel):
+    t = dict()
+    t['modified_date'] = datetime.now()
+    if temp_in.name:
+        t['name'] = temp_in.name
+    if temp_in.targets != None:
+        t['targets'] = temp_in.targets
+        print(temp_in.targets)
+    temp = models.update_group(t, id)
+    if temp:
+        return temp
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Not Found"
+    )
+
+
+# @app.put('/groups/{id}', response_model=schemas.GroupDisplayModel)
+# async def update_group(id: int, group_data: schemas.GroupFormModel):
+#     db = next(get_db())
+#     try:
+#         group = models.get_group_by_id(id)
+#         if not group:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+
+#         # Update group properties if provided in the request body
+#         if group_data.name is not None:
+#             group.name = group_data.name
+#         if group_data.modified_date is not None:
+#             group.modified_date = group_data.modified_date
+
+#         # Update the targets of the group
+#         if group_data.targets is not None:
+#             group_targets = models.get_targets(group.id)
+#             existing_emails = {target.email for target in group_targets}
+#             for new_target in group_data.targets:
+#                 if new_target.email in existing_emails:
+#                     # If the target already exists, update its information.
+#                     existing_target = db.query(models.Target).filter_by(
+#                         email=new_target.email).first()
+#                     existing_target.first_name = new_target.first_name
+#                     existing_target.last_name = new_target.last_name
+#                     existing_target.position = new_target.position
+#                 else:
+#                     # Otherwise, add the new target to the group.
+#                     target = models.Target(first_name=new_target.first_name, last_name=new_target.last_name,
+#                                            email=new_target.email, position=new_target.position)
+#                     db.add(target)
+#                     db.commit()
+#                     db.refresh(target)
+#                     models.insert_target_into_group(db, target, group.id)
+
+#         # Commit the changes to the database
+#         db.commit()
+#         db.refresh(group)
+
+#         return group
+
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                             detail="An error occurred while updating the group")
+#     finally:
+#         db.close()
+
+
+# @app.delete('/site_templates/{temp_id}')
+# async def del_site_template(temp_id: int, token: str = Depends(get_token)):
+#     await check_permission(token, (Role.SUPER,))
+#     temp = models.get_site_template_by_id(temp_id)
+#     if temp:
+#         if temp.image_site:
+#             image_path = os.path.join(IMAGES_FOLDER, temp.image_site)
+#             if os.path.exists(image_path):
+#                 os.remove(image_path)
+
+#         models.delete_site_temp(temp_id)
+#         return {'success': True}
+#     raise HTTPException(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         detail="Not Found"
+#     )
+
 
 if __name__ == "__main__":
-    # Check if SMTP configuration with user_id=1 already exists
-    # existing_smtp = get_smtp_id(1)
-    # if not existing_smtp:
-    #     create_smtp(SMTPDisplayModel(
-    #         user_id=1,
-    #         interface_type="smtp",
-    #         name="My SMTP Server",
-    #         host="smtp.example.com",
-    #         username="my_username",
-    #         password="my_password",
-    #         from_address="noreply@example.com",
-    #         ignore_cert_errors=1
-    #     ))
-
     uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
