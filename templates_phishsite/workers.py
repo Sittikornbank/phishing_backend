@@ -4,17 +4,16 @@ from httpx import AsyncClient
 from fastapi import HTTPException, status
 from time import time
 from datetime import datetime, timedelta
-from schemas import EventContext, Event
+from schemas import EventContext, Event, Task, AuthContext, TemplateReqModel, SiteModel
 import os
 import jwt
 
 load_dotenv()
 
 SECRET = os.getenv("SECRET")
-# rid, phishsite id, site template id
-tasks: dict[str, tuple[int, int]] = dict()
-tasks['abc'] = (4, 3)
-tasks['hello'] = (5, 102)
+tasks: dict[str, Task] = dict()
+tasks['abcd'] = Task(ref_key='abcd', ref_ids=['ddd1', 'ddd2'], start_at=int(
+    time()), site=get_site_template_by_id(102), worker_id=4)
 
 
 def create_token(worker: Phishsite):
@@ -73,14 +72,33 @@ def code(lang: str):
 
 
 def process_event(context: EventContext, wid: int):
-    if context.ref_id in tasks and tasks[context.ref_id][0] == wid:
+    if context.ref_key in tasks and context.ref_id in tasks[context.ref_key].ref_ids and \
+            tasks[context.ref_key].worker_id == wid and time() > tasks[context.ref_key].start_at:
         script_dir = os.path.dirname(__file__)
-        path = os.path.join(script_dir, f'log/{context.ref_id}.txt')
+        path = os.path.join(script_dir, f'log/{context.ref_key}.txt')
         with open(path, 'a') as f:
             f.write(
-                f'[{datetime.now().isoformat()}]Event:{context.event_type.value} Campaign:{context.ref_id} Payload:{context.payload}\n')
+                f'[{datetime.now().isoformat()}]Event:{context.event_type.value} Campaign:{context.ref_key} Tatget:{context.ref_id} Payload:{context.payload}\n')
 
 
 def get_landing(context: EventContext, wid: int):
-    if context.ref_id in tasks and tasks[context.ref_id][0] == wid:
-        return get_site_template_by_id(tasks[context.ref_id][1])
+    if context.ref_key in tasks and context.ref_id in tasks[context.ref_key].ref_ids and \
+            tasks[context.ref_key].worker_id == wid and time() > tasks[context.ref_key].start_at:
+        try:
+            return tasks[context.ref_key].site
+        except:
+            return None
+
+
+def add_landing_task(req: TemplateReqModel, site: SiteModel):
+    task = Task(ref_key=req.ref_key, ref_ids=req.ref_ids,
+                site=site, worker_id=1, start_at=req.start_at)
+    if req.ref_key in tasks:
+        return False
+    tasks[req.ref_key] = task
+    return True
+
+
+def remove_task(ref_key: str):
+    if ref_key in tasks:
+        tasks.pop(ref_key)

@@ -64,7 +64,7 @@ class EmailModel(ParentModel):
     envelope_sender: str = ""
     subject: str = ""
     html: str = ""
-    attachments: str = ""
+    attachments: list[str] = []
     image_email: str = ""
 
     class Config:
@@ -88,7 +88,7 @@ class EmailFormModel(EmailModel):
     envelope_sender: str | None = None
     subject: str | None = None
     html: str | None = None
-    attachments: str | None = None
+    attachments: list[str] | None = None
     image_email: str | None = None
     visible: Visible | None = None
     owner_id: int | None = None
@@ -124,7 +124,7 @@ class EmailDisplayModel(BaseModel):
     envelope_sender: str | None = None
     subject: str | None = None
     html: str | None = None
-    attachments: str | None = None
+    attachments: list[str] | None = None
     image_email: str | None = None
 
     class Config:
@@ -201,3 +201,35 @@ class EventContext(BaseModel):
     ref_id: str
     event_type: Event
     payload: str | None
+
+
+class TemplateReqModel(BaseModel):
+    ref_key: str
+    ref_ids: list[str]
+    template_id: int
+    start_at: int
+
+
+class LaunchingModel(BaseModel):
+    req: TemplateReqModel
+    auth: AuthContext
+
+
+class Task(BaseModel):
+    ref_key: str
+    ref_ids: list[str]
+    start_at: int
+    site: SiteModel | None = None
+    worker_id: int
+
+
+class EmailResSchema(BaseModel):
+    id: int | None = None
+    name: str = ""
+    envelope_sender: str = ""
+    subject: str = ""
+    html: str = ""
+    attachments: list[str] = []
+
+    class Config:
+        orm_mode = True

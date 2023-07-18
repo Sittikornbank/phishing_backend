@@ -22,6 +22,16 @@ def get_token(req: Request):
     return token
 
 
+def protect_api(req: Request):
+    token = get_token(req)
+    if API_KEY != token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+    return True
+
+
 async def check_token(token: str):
     async with AsyncClient() as client:
         try:

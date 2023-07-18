@@ -7,8 +7,8 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from auth import get_token, check_permission, check_token
-from schemas import Role
+from auth import get_token, check_permission, check_token, protect_api
+from schemas import Role, Visible
 import os
 import schemas
 import models
@@ -371,10 +371,10 @@ async def check_phishsite(lang: str, token: str = Depends(get_token)):
 
 
 @app.post('/workers')
-async def handle_worker_post(req: Request):
+async def handle_worker_post(req: Request, token: str = Depends(get_token)):
     body = await req.json()
     if body and 'ref_key' in body and 'ref_id' in body and 'event_type' in body:
-        wid = workers.validate_token(body['ref_key'])
+        wid = workers.validate_token(token)
         if wid < 1:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -400,6 +400,62 @@ async def handle_worker_post(req: Request):
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Not Found"
     )
+
+
+@app.post('/landing', response_model=schemas.EmailResSchema)
+def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
+    template: schemas.TemplateModel = models.get_template_by_id(
+        c.req.template_id)
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template Not Found"
+        )
+    if c.auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED"
+        )
+    if template.visible == Visible.NONE and c.auth.role != Role.SUPER:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED"
+        )
+    if template.visible == Visible.PAID and c.auth.role == Role.GUEST:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED"
+        )
+    if template.visible == Visible.CUSTOM:
+        if c.auth.role == Role.ADMIN and \
+                template.owner_id != c.auth.id and template.org_id != c.auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="UNAUTHORIZED"
+            )
+        if (c.auth.role == Role.GUEST or c.auth.role == Role.PAID) and template.owner_id != c.auth.id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="UNAUTHORIZED"
+            )
+    if not (template.site_template and template.mail_template):
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Template Not Complete"
+        )
+    site = models.get_site_template_by_id(template.site_template)
+    mail = models.get_email_template_by_id(template.mail_template)
+    if not (site and mail):
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Template Not Complete 2"
+        )
+    if not workers.add_landing_task(req=c.req, site=site):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Landing Task with ref_key already existed."
+        )
+    return mail
 
 
 def validate_and_set_image(temp_in:

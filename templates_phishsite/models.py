@@ -1,5 +1,6 @@
 from sqlalchemy import (Column, Integer, String, Boolean,
-                        Text, create_engine, ForeignKey, DateTime)
+                        Text, create_engine, ForeignKey, DateTime,
+                        JSON)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from schemas import (Visible, EmailModel, SiteModel,
@@ -44,7 +45,7 @@ class EmailTemplate(Base):
     envelope_sender = Column(String(256), default="")
     subject = Column(String(512), default="")
     html = Column(Text, default="")
-    attachments = Column(String(512), default="")
+    attachments = Column(JSON(), default=[])
     image_email = Column(String(128), default="")
     modified_date = Column(DateTime())
     create_at = Column(DateTime())
