@@ -493,4 +493,4 @@ def validate_and_set_image(temp_in:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

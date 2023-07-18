@@ -445,4 +445,4 @@ if __name__ == "__main__":
                             role=Role.SUPER,
                             organization='None',
                             is_active=True))
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

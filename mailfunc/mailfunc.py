@@ -300,4 +300,4 @@ if __name__ == "__main__":
             ignore_cert_errors=True
         ))
 
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))
