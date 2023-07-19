@@ -312,5 +312,5 @@ if __name__ == "__main__":
             from_address="noreply@example.com",
             ignore_cert_errors=True
         ))
-
+ # test
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))
