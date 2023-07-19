@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,7 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import bcrypt
 import os
-from schemas import GroupListModel, GroupDisplayModel, TargetModel, TargetDisplayModel
+from schemas import GroupListModel, GroupDisplayModel, TargetModel, TargetDisplayModel, Visible, CampaignModel
 import email.utils as email_utils
 
 load_dotenv()
@@ -59,40 +59,62 @@ class Target(Base):
         return addr
 
 
-class GroupSummary(Base):
-    __tablename__ = 'group_summaries'
+class Campaign(Base):
+    __tablename__ = "campaigns"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer)
+    name = Column(String(256))
+    created_date = Column(DateTime(), default=datetime.now())
+    completed_date = Column(DateTime(), default=datetime.now())
+    templates_id = Column(Integer)
+    status = Column(String(256))
+    url = Column(String(256))
+    smtp_id = Column(Integer)
+    launch_date = Column(DateTime)
+    send_by_date = Column(DateTime)
+
+    # visible = Column(String(32), default=Visible.NONE)
+    # owner_id = Column(Integer, default=None)
+    # org_id = Column(Integer, default=None)
+
+
+class Event(Base):
+    __tablename__ = "events"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    campaign_id = Column(Integer)
+    email = Column(String(256))
+    time = Column(DateTime)
+    message = Column(String(256))
+    details = Column(String(256))
+
+    # visible = Column(String(32), default=Visible.NONE)
+    # owner_id = Column(Integer, default=None)
+    # org_id = Column(Integer, default=None)
+
+
+class Result(Base):
+    __tablename__ = "results"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    name = Column(String(256))
-    modified_date = Column(String(64))
-    num_targets = Column(Integer)
+    campaign_id = Column(Integer)
+    user_id = Column(Integer)
+    r_id = Column(String(256))
+    email = Column(String(256))
+    first_name = Column(String(256))
+    last_name = Column(String(256))
+    status = Column(String(256), nullable=False)
+    ip = Column(String(256))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    position = Column(String(256))
+    send_date = Column(DateTime)
+    reported = Column(Boolean)
+    modified_date = Column(DateTime, default=datetime.now())
 
-# def validate_group(group):
-#     if not group.name:
-#         raise GroupValidationError("Group name not specified")
-#     if not group.targets:
-#         raise GroupValidationError("No targets specified")
+    visible = Column(String(32), default=Visible.NONE)
+    owner_id = Column(Integer, default=None)
+    org_id = Column(Integer, default=None)
 
-
-# def insert_target_into_group(target, gid):
-#     db: Session = SessionLocal()
-
-#     if not target.email:
-#         raise ValueError("No email address specified")
-
-#     if db.query(Target).filter_by(email=target.email).count() > 0:
-#         return
-
-#     db.add(target)
-#     db.commit()
-
-#     db.add(Group_Target(group_id=gid, target_id=target.id))
-#     db.commit()
-
-
-# def get_targets(gid):
-#     db: Session = SessionLocal()
-#     return db.query(Target).join(Group_Target).filter(Group_Target.group_id == gid).all()
 
 def get_db():
     db: Session = SessionLocal()
@@ -100,14 +122,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-def get_gs(db: Session):
-    return db.query(Group).all()
-
-
-def get_g(db: Session, id: int):
-    return db.query(Group).filter(Group.id == id).first()
 
 
 def get_all_group(page: int | None = None, size: int | None = None):
@@ -170,81 +184,6 @@ def create_group(group: GroupDisplayModel):
     return
 
 
-# def create_group(group: GroupDisplayModel):
-#     db: Session = next(get_db())
-#     try:
-#         targets = [
-#             Target(
-#                 first_name=target.first_name,
-#                 last_name=target.last_name,
-#                 email=target.email,
-#                 position=target.position
-#             )
-#             for target in group.targets
-#         ]
-
-#         grou = Group(
-#             name=group.name,
-#             modified_date=group.modified_date,
-#             targets=targets
-#         )
-
-#         db.add(grou)
-#         db.commit()
-#         db.refresh(grou)
-#         return grou
-#     except Exception as e:
-#         print(e)
-#     return
-
-def update_target(targets: list[Target], updated_target: TargetDisplayModel) -> list[Target]:
-    for target in targets:
-        if target.first_name == updated_target.first_name and target.last_name == updated_target.last_name:
-            # Update the target with the new data
-            target.email = updated_target.email
-            target.position = updated_target.position
-            break
-    return targets
-
-
-# def update_group(id: int, updated_group: GroupDisplayModel):
-#     db: Session = next(get_db())
-#     try:
-#         group = db.query(Group).filter(Group.id == id).first()
-
-#         if not group:
-#             raise ValueError("Group not found")
-
-#         targets = update_target(group.targets)
-
-#         group.name = updated_group.name
-#         group.modified_date = updated_group.modified_date
-#         group.targets = targets
-
-#         db.commit()
-#         db.refresh(group)
-#         return group
-#     except Exception as e:
-#         print(e)
-#     return
-def update_group(temp_in: dict, id: int):
-    db: Session = next(get_db())
-    try:
-        if temp_in:
-            temp_in['modified_date'] = datetime.now()
-
-            # Separate the update for name and modified_date from the targets
-            if 'targets' in temp_in:
-                del temp_in['targets']
-
-            db.query(Group).filter(Group.id == id).update(temp_in)
-            db.commit()
-            return get_group_by_id(id)
-    except Exception as e:
-        print(e)
-    return
-
-
 def update_group(temp_in: dict, id: int):
     db: Session = next(get_db())
     try:
@@ -266,7 +205,90 @@ def update_group(temp_in: dict, id: int):
 def delete_group(id: int):
     db: Session = next(get_db())
     try:
-        c = db.query(Group).filter(Group.id == id).delete()
+        # Get the group to be deleted
+        group = db.query(Group).filter(Group.id == id).first()
+
+        # Check if the group exists
+        if not group:
+            return False
+
+        # Delete associated targets from the group
+        for target in group.targets:
+            db.delete(target)
+        # Delete the group
+        db.delete(group)
+        db.commit()
+        return True
+
+    except Exception as e:
+        print(e)
+    return False
+
+# ------------------------- Campaign -----------------------------------#
+
+
+def get_campaign():
+    db: Session = next(get_db())
+    try:
+        return db.query(Campaign).all()
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_all_campaign(page: int | None = None, size: int | None = None):
+    db: Session = next(get_db())
+    try:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        gs = db.query(Campaign).offset(size*(page-1)).all()
+        count = db.query(Campaign).count()
+        return GroupListModel(count=count,
+                              page=page,
+                              limit=size,
+                              last_page=(count//size)+1,
+                              campaing=gs)
+    except Exception as e:
+        print(e)
+    return GroupListModel()
+
+
+def get_campaign_by_id(id: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(Campaign).filter(Campaign.id == id).first()
+    except Exception as e:
+        print(e)
+    return
+
+    return
+
+
+def create_campaign(gs: CampaignModel):
+    db: Session = next(get_db())
+    try:
+        campai = Campaign(
+            user_id=gs.user_id,
+            name=gs.name,
+            templates_id=gs.templates_id,
+            status=gs.status,
+            url=gs.url,
+            smtp_id=gs.smtp_id
+        )
+        db.add(campai)
+        db.commit()
+        db.refresh(campai)
+    except Exception as e:
+        print(e)
+    return
+
+
+def delete_campaign(id: int):
+    db: Session = next(get_db())
+    try:
+        c = db.query(Campaign).filter(Campaign.id == id).delete()
         db.commit()
         return c > 0
     except Exception as e:
