@@ -1,7 +1,5 @@
 
-from pydantic import BaseModel
 from datetime import datetime
-from typing import List
 from sqlalchemy.orm import Session
 import uvicorn
 from fastapi import Request, FastAPI, status, HTTPException, Depends
@@ -12,8 +10,10 @@ from models import (Base, engine, get_db, get_group_by_id, create_group)
 import os
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
+from schemas import Role, AuthContext
 import schemas
 import models
+from auth import auth_permission, auth_token
 
 app = FastAPI()
 
@@ -45,8 +45,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.get("/groups", response_model=schemas.GroupListModel)
-async def get_group_configss(page: int | None = 1, limit: int | None = 25):
+async def get_group_configss(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
     # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
+    auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN))
+    if auth.role == Role.SUPER:
+        pass
     return models.get_all_group(page=page, size=limit)
 
 
