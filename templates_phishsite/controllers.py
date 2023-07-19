@@ -7,8 +7,8 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from auth import get_token, check_permission, check_token
-from schemas import Role
+from auth import get_token, check_permission, check_token, protect_api, auth_token, auth_permission
+from schemas import Role, Visible, AuthContext
 import os
 import schemas
 import models
@@ -49,14 +49,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.get('/templates', response_model=schemas.TemplateListModel)
-async def get_templates(page: int | None = 1, limit: int | None = 25, token: str = Depends(get_token)):
-    await check_token(token)
+async def get_templates(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
     return models.get_all_templates(page=page, size=limit)
 
 
 @app.get('/templates/{temp_id}', response_model=schemas.TemplateDisplayModel)
-async def get_template(temp_id: int, token: str = Depends(get_token)):
-    await check_token(token)
+async def get_template(temp_id: int, auth: AuthContext = Depends(auth_token)):
+
     temp = models.get_template_by_id(temp_id)
     if temp:
         return temp
@@ -68,8 +67,8 @@ async def get_template(temp_id: int, token: str = Depends(get_token)):
 
 @app.post('/templates', response_model=schemas.TemplateModel)
 async def add_template(temp_in: schemas.TemplateModel,
-                       token: str = Depends(get_token)):
-    await check_permission(token, (Role.SUPER,))
+                       auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth=auth, roles=(Role.SUPER))
     temp_in.create_at = datetime.now()
     temp = models.create_template(temp_in)
     if temp:
@@ -371,10 +370,10 @@ async def check_phishsite(lang: str, token: str = Depends(get_token)):
 
 
 @app.post('/workers')
-async def handle_worker_post(req: Request):
+async def handle_worker_post(req: Request, token: str = Depends(get_token)):
     body = await req.json()
     if body and 'ref_key' in body and 'ref_id' in body and 'event_type' in body:
-        wid = workers.validate_token(body['ref_key'])
+        wid = workers.validate_token(token)
         if wid < 1:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -400,6 +399,94 @@ async def handle_worker_post(req: Request):
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Not Found"
     )
+
+
+@app.get('/landing', response_model=list[schemas.Task])
+def get_all_tasks(auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth=auth, roles=(Role.SUPER,))
+    return workers.get_all_tasks()
+
+
+@app.post('/landing', response_model=schemas.EmailResSchema)
+def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
+    template: schemas.TemplateModel = models.get_template_by_id(
+        c.req.template_id)
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Template Not Found"
+        )
+    if c.auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED"
+        )
+    if template.visible == Visible.NONE and c.auth.role != Role.SUPER:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED"
+        )
+    if template.visible == Visible.PAID and c.auth.role == Role.GUEST:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED"
+        )
+    if template.visible == Visible.CUSTOM:
+        if c.auth.role == Role.ADMIN and template.org_id != c.auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="UNAUTHORIZED"
+            )
+        if (c.auth.role in [Role.PAID, Role.GUEST]) and template.owner_id != c.auth.id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="UNAUTHORIZED"
+            )
+    if not (template.site_template and template.mail_template):
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Template Not Complete"
+        )
+    site = models.get_site_template_by_id(template.site_template)
+    mail = models.get_email_template_by_id(template.mail_template)
+    if not (site and mail):
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Template Not Complete, Some resounce may not existed"
+        )
+    if not workers.add_landing_task(req=c.req, site=site, auth=c.auth):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Landing Task with ref_key already existed."
+        )
+    return mail
+
+
+@app.delete('/landing')
+def remove_landing_campaign(ref_key: str, auth: AuthContext, _=Depends(protect_api)):
+    task = workers.get_task_by_ref(ref_key)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found"
+        )
+    if auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access Landing"
+        )
+    if auth.role in [Role.PAID, Role.GUEST] and auth.id != task.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access Landing"
+        )
+    if auth.role == Role.ADMIN and auth.organization != task.org_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access Landing"
+        )
+    workers.remove_task(ref_key)
+    return {'success': True}
 
 
 def validate_and_set_image(temp_in:
@@ -437,4 +524,4 @@ def validate_and_set_image(temp_in:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

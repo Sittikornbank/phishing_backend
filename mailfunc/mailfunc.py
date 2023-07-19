@@ -178,15 +178,15 @@ async def test_smtp(id: int, auth: AuthContext = Depends(auth_token)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SMTP not found")
     if auth.role == Role.SUPER:
-        result = await tasks.send_test_email(s)
+        result = tasks.send_test_email(s)
         return {'success': result}
     elif auth.role == Role.ADMIN:
         if s and s.org_id == auth.organization:
-            result = await tasks.send_test_email(s)
+            result = tasks.send_test_email(s)
             return {'success': result}
     elif auth.role == Role.GUEST or auth.role == Role.PAID:
         if s and s.user_id == auth.id:
-            result = await tasks.send_test_email(s)
+            result = tasks.send_test_email(s)
             return {'success': result}
 
     raise HTTPException(
@@ -274,7 +274,7 @@ async def check_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
     return {"message": "IMAP configuration is valid"}
 
 
-@app.post("/mails")
+@app.post("/mailing")
 async def create_and_start_task(task: TaskModel):
     smtp = models.get_smtp_id(task.smtp_id)
     if not smtp:
@@ -300,4 +300,4 @@ if __name__ == "__main__":
             ignore_cert_errors=True
         ))
 
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))
