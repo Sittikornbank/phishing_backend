@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from auth import AuthContext, get_token
 import schemas
-from controllers import launch_template_worker, process_before_launch
+from controllers import launch_template, process_before_launch
 import os
 
 load_dotenv()
@@ -39,16 +39,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.post('/launch')
 async def launch(model: schemas.LaunchModel, token=Depends(get_token)):
-    c = process_before_launch(model.campaign, targets=model.targets)
-    reqt = schemas.TemplateReqModel(task_ref=c.ref,
-                                    refs=[t.ref for t in c.targets],
+    c = process_before_launch(
+        model.campaign, targets=model.targets, auth=model.auth)
+    reqt = schemas.TemplateReqModel(ref_key=c.ref,
+                                    ref_ids=[t.ref for t in c.targets],
                                     template_id=model.campaign.templates_id,
                                     start_at=int(model.campaign.launch_date.timestamp()))
-    email_temp = await launch_template_worker(req=reqt, auth=model.auth)
+    email_temp = await launch_template(req=reqt, auth=model.auth)
     try:
         pass
     except:
         pass
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

@@ -45,7 +45,7 @@ class EmailSchema(BaseModel):
     envelope_sender: str = ""
     subject: str = ""
     html: str = ""
-    attachments: str = ""
+    attachments: list[str] = []
 
 
 class SMTPModel(BaseModel):
@@ -80,8 +80,8 @@ class EmailReqModel(BaseModel):
 
 
 class TemplateReqModel(BaseModel):
-    task_ref: str
-    refs: list[str]
+    ref_key: str
+    ref_ids: list[str]
     template_id: int
     start_at: int
 
