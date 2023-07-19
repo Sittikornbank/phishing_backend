@@ -274,7 +274,7 @@ async def check_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
     return {"message": "IMAP configuration is valid"}
 
 
-@app.post("/mails")
+@app.post("/mailing")
 async def create_and_start_task(task: TaskModel):
     smtp = models.get_smtp_id(task.smtp_id)
     if not smtp:
