@@ -221,6 +221,8 @@ class Task(BaseModel):
     start_at: int
     site: SiteModel | None = None
     worker_id: int
+    org_id: int | None = None
+    user_id: int
 
 
 class EmailResSchema(BaseModel):

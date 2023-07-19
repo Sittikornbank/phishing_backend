@@ -13,7 +13,7 @@ load_dotenv()
 SECRET = os.getenv("SECRET")
 tasks: dict[str, Task] = dict()
 tasks['abcd'] = Task(ref_key='abcd', ref_ids=['ddd1', 'ddd2'], start_at=int(
-    time()), site=get_site_template_by_id(102), worker_id=4)
+    time()), site=get_site_template_by_id(1), worker_id=1, user_id=1, org_id=1)
 
 
 def create_token(worker: Phishsite):
@@ -90,13 +90,24 @@ def get_landing(context: EventContext, wid: int):
             return None
 
 
-def add_landing_task(req: TemplateReqModel, site: SiteModel):
+def add_landing_task(req: TemplateReqModel, site: SiteModel, auth: AuthContext):
     task = Task(ref_key=req.ref_key, ref_ids=req.ref_ids,
-                site=site, worker_id=1, start_at=req.start_at)
+                site=site, worker_id=1, start_at=req.start_at,
+                org_id=auth.organization, user_id=auth.id)
     if req.ref_key in tasks:
         return False
     tasks[req.ref_key] = task
     return True
+
+
+def get_task_by_ref(ref_key: str):
+    if not ref_key in tasks:
+        return
+    return tasks[ref_key]
+
+
+def get_all_tasks():
+    return list(tasks.values())
 
 
 def remove_task(ref_key: str):
