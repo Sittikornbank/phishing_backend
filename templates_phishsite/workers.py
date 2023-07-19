@@ -12,8 +12,6 @@ load_dotenv()
 
 SECRET = os.getenv("SECRET")
 tasks: dict[str, Task] = dict()
-tasks['abcd'] = Task(ref_key='abcd', ref_ids=['ddd1', 'ddd2'], start_at=int(
-    time()), site=get_site_template_by_id(1), worker_id=1, user_id=1, org_id=1)
 
 
 def create_token(worker: Phishsite):
