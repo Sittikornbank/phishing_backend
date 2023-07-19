@@ -12,6 +12,8 @@ SECRET = os.getenv("VERIFY_SECRET")
 EXPIRE_VERIFY = int(os.getenv("VERIFY_EMAIL_EXPIRE_HOURS"))
 EXPIRE_FACTOR = int(os.getenv("VERIFY_EMAIL_EXPIRE_MINUTES"))
 is_send_email = bool(os.getenv("IS_SEND_EMAIL"))
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
 
 
 def create_verify_token(user_id: int):
@@ -37,7 +39,7 @@ def send_verify_email(to_email: str, user_id: int):
     from_email = '<noreply>@tummainorrr.com'
     subject = 'Verification Email'
     message = 'Thank you for singed up to our service!\n' + \
-        f'Click here to verify your Email: http://127.0.0.1:50501/verify?code={verification_token}' + \
+        f'Click here to verify your Email: http://{HOST}:{PORT}/verify?code={verification_token}' + \
         f'\nPlease verify your email within {EXPIRE_VERIFY} hour(s).'
 
     # สร้างอีเมล
