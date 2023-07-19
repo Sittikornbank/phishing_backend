@@ -232,6 +232,7 @@ class EmailResSchema(BaseModel):
     subject: str = ""
     html: str = ""
     attachments: list[str] = []
+    base_url: str = ""
 
     class Config:
         orm_mode = True
