@@ -135,6 +135,7 @@ def login(u: UserLoginModel):
                 detail="account is not activated"
             )
         token = add_session(user)
+
         if token:
             update_last_login(user.id)
             return {'username': user.username,
