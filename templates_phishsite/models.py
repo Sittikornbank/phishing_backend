@@ -35,6 +35,8 @@ class SiteTemplate(Base):
     visible = Column(String(32), default=Visible.NONE)
     owner_id = Column(Integer, default=None)
     org_id = Column(Integer, default=None)
+    phishsite_id = site_template = Column(
+        Integer, ForeignKey('phishsites.id', ondelete='SET NULL',))
 
 
 class EmailTemplate(Base):

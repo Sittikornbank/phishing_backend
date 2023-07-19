@@ -449,7 +449,7 @@ def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
         )
     site = models.get_site_template_by_id(template.site_template)
     mail = models.get_email_template_by_id(template.mail_template)
-    if not (site and mail):
+    if not (site and mail and site.phishsite_id):
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail="Template Not Complete, Some resounce may not existed"
@@ -459,7 +459,7 @@ def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Landing Task with ref_key already existed."
         )
-    setattr(mail, "base_url", "http://192.168.2.47:8080")
+    setattr(mail, "base_url", site.phishsite_id)
     return mail
 
 
