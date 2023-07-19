@@ -156,7 +156,7 @@ class Target(BaseModel):
 
 
 class TaskModel(BaseModel):
-    task_id: int = Field(gt=0)
+    task_id: str
     smtp_id: int = Field(gt=0)
     subject: str = ""
     sender: str = ""
@@ -166,3 +166,5 @@ class TaskModel(BaseModel):
     sent: int = 0
     duration: int = Field(gt=0)
     targets: list[Target] = []
+    auth: AuthContext
+    base_url: str

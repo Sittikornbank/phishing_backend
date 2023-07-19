@@ -46,6 +46,7 @@ class EmailSchema(BaseModel):
     subject: str = ""
     html: str = ""
     attachments: list[str] = []
+    base_url: str = ""
 
 
 class SMTPModel(BaseModel):
@@ -68,7 +69,7 @@ class Target(BaseModel):
 
 
 class EmailReqModel(BaseModel):
-    task_id: int = Field(gt=0)
+    task_id: str
     smtp_id: int = Field(gt=0)
     subject: str = ""
     sender: str = ""
@@ -77,6 +78,7 @@ class EmailReqModel(BaseModel):
     status: Status = Status.IDLE
     duration: int | None = Field(gt=0)
     targets: list[Target] = []
+    base_url: str = ""
 
 
 class TemplateReqModel(BaseModel):

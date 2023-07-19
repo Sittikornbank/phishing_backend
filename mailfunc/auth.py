@@ -62,3 +62,13 @@ def auth_permission(auth: AuthContext, roles: tuple[Role]):
             detail="Unauthorized"
         )
     return auth
+
+
+def protect_api(req: Request):
+    token = get_token(req)
+    if API_KEY != token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+    return True

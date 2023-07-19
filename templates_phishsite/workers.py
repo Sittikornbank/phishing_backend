@@ -90,6 +90,12 @@ def get_landing(context: EventContext, wid: int):
             return None
 
 
+def get_dotpng(context: EventContext, wid: int):
+    return context.ref_key in tasks and context.ref_id in tasks[context.ref_key].ref_ids and \
+        tasks[context.ref_key].worker_id == wid and time(
+    ) > tasks[context.ref_key].start_at
+
+
 def add_landing_task(req: TemplateReqModel, site: SiteModel, auth: AuthContext):
     task = Task(ref_key=req.ref_key, ref_ids=req.ref_ids,
                 site=site, worker_id=1, start_at=req.start_at,

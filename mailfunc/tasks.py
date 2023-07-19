@@ -3,10 +3,12 @@ import asyncio
 import os
 import time
 import jinja2
+import binascii
 from dotenv import load_dotenv
 from schemas import Target, TaskModel, Status
 from httpx import AsyncClient
 import smtplib
+import string
 from models import SMTP
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -33,9 +35,23 @@ async def update_status(data: dict):
     return False
 
 
-def render_template(template: str, target: Target):
+def random_url_parameter(ref: str):
+    char = string.ascii_lowercase+string.ascii_uppercase+string.digits
+    ran = [binascii.hexlify(os.urandom(32)).decode('utf-8'),
+           binascii.hexlify(os.urandom(28)).decode('utf-8'),
+           binascii.hexlify(os.urandom(16)).decode('utf-8')]
+    return f"?id={ran[0]}&verification={ran[1]}&ref={ref}&tid={ran[2]}"
+
+
+def render_template(template: str, target: Target, ref_key: str, base_url: str):
+    ref = ref_key + target.ref
+    ref = random_url_parameter(ref)
+    tracking = base_url + "/image/dot.png" + ref
+    base_url = base_url + ref
     temp = environment.from_string(template)
-    return temp.render(target.dict())
+    data = target.dict()
+    data.update({'tracking': tracking, 'base_url': base_url})
+    return temp.render(data)
 
 
 def send_email(to_email: str, subject: str, message: str, sender: str, att: list[str], smtp: SMTP):
@@ -49,7 +65,8 @@ def send_email(to_email: str, subject: str, message: str, sender: str, att: list
         msg['Subject'] = subject
         msg.attach(MIMEText(message, 'html'))
 
-        with smtplib.SMTP(smtp.host, 587) as server:
+        host, port = smtp.host.split(':')
+        with smtplib.SMTP(host, int(port)) as server:
             server.starttls()
             server.login(smtp.username, smtp.password)
             server.sendmail(smtp.username, to_email, msg.as_string())
@@ -74,8 +91,10 @@ async def send_email_task(task: TaskModel, smtp: SMTP):
         {'task_id': task.task_id, 'status': task.status, 'sent': 0})
     for i, t in enumerate(task.targets):
         time.sleep(delay)
-        sub = render_template(task.subject, t)
-        msg = render_template(task.html, t)
+        sub = render_template(
+            task.subject, t, ref_key=task.task_id, base_url=task.base_url)
+        msg = render_template(
+            task.html, t, ref_key=task.task_id, base_url=task.base_url)
         if send_email(t.email, sub, msg, task.sender, task.attachments, smtp):
             task.sent += 1
             await update_status(

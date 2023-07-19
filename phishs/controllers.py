@@ -58,8 +58,6 @@ async def launch_template(req: TemplateReqModel, auth: AuthContext):
         try:
             header = {'Authorization': f'Bearer {API_KEY}'}
             json = {'req': req.dict(), 'auth': auth.dict()}
-            json['auth']['role'] = 'superadmin'
-            print(json)
             res = await client.post(TEMPLATES_URI, json=json, headers=header)
             if res.status_code == 200:
                 res = res.json()
@@ -87,5 +85,30 @@ async def launch_template(req: TemplateReqModel, auth: AuthContext):
                 detail="INTERNAL SERVER ERROR, Cannot get Templates")
 
 
-async def launch_email_worker(req: EmailReqModel, auth: AuthContext):
-    pass
+async def launch_email(req: EmailReqModel, auth: AuthContext):
+    async with AsyncClient() as client:
+        try:
+            header = {'Authorization': f'Bearer {API_KEY}'}
+            json = req.dict()
+            json.update({'auth': auth.dict()})
+            res = await client.post(MAILFUNC_URI, json=json, headers=header)
+            if res.status_code == 200:
+                res = res.json()
+                return res['success']
+            elif res.status_code == 401:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Cannot Start Sending Emails")
+            elif res.status_code == 404:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cannot Start Sending Emails")
+            else:
+                raise Exception()
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            print(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="INTERNAL SERVER ERROR, Cannot start sending Email")

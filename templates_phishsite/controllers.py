@@ -394,7 +394,7 @@ async def handle_worker_post(req: Request, token: str = Depends(get_token)):
             if temp:
                 return {'redirect_url': temp.redirect_url}
         else:
-            return {'success': True}
+            return {'success': workers.get_dotpng(context, wid)}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Not Found"
@@ -459,7 +459,7 @@ def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Landing Task with ref_key already existed."
         )
-    setattr(mail, "base_url", models.get_phishsite_by_id(1).uri)
+    setattr(mail, "base_url", "http://192.168.2.47:8080")
     return mail
 
 

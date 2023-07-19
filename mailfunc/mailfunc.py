@@ -11,7 +11,7 @@ from schemas import (SMTPDisplayModel, SMTPFormModel,
                      TaskModel)
 from models import (Base, engine)
 from dotenv import load_dotenv
-from auth import auth_token, auth_permission
+from auth import auth_token, auth_permission, protect_api
 import os
 import models
 import tasks
@@ -275,12 +275,25 @@ async def check_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
 
 
 @app.post("/mailing")
-async def create_and_start_task(task: TaskModel):
+async def create_and_start_task(task: TaskModel, _=Depends(protect_api)):
+    print(task.smtp_id)
     smtp = models.get_smtp_id(task.smtp_id)
     if not smtp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SMTP Not Found")
+    if task.auth.role in [Role.GUEST, Role.PAID] and smtp.user_id != task.auth.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access SMTP")
+    if task.auth.role == Role.ADMIN and smtp.org_id != task.auth.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access SMTP")
+    if task.auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access SMTP")
     res = await tasks.create_and_start_task(task, smtp)
     return {'success': res}
 
