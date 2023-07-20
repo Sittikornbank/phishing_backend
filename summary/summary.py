@@ -10,7 +10,7 @@ from models import (Base, engine, get_db, get_group_by_id, create_group)
 import os
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from schemas import Role, AuthContext
+from schemas import Role, AuthContext, GroupFormModel
 import schemas
 import models
 from auth import auth_permission, auth_token
@@ -43,106 +43,275 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse({'detail': detail},
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+# --------------------------------- Groups ---------------------------------#
+
 
 @app.get("/groups", response_model=schemas.GroupListModel)
 async def get_group_configss(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
-    # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
-    auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN))
     if auth.role == Role.SUPER:
-        pass
-    return models.get_all_group(page=page, size=limit)
+        return models.get_all_group(page, limit)
+    elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+        return models.get_group_by_org(auth.organization, page, limit)
+    # read main database
+    return models.get_group_by_user(id=auth.id, page=page, size=limit, include_none=True)
 
 
 @app.get("/groups/{id}", response_model=schemas.GroupDisplayModel)
-async def get_group_config(id: int):
-    group_config = get_group_by_id(id)
-    if not group_config:
+async def get_group_config(id: int, auth: AuthContext = Depends(auth_token)):
+    group = get_group_by_id(id)
+    if not group:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="group not found")
-    return group_config
+            detail=f"Not Found group of id :{id}")
+    if auth.role == Role.SUPER:
+        return group
+    elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+        if group.org_id != None and group.org_id != auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Not Found group of id :{id}")
+        return group
+    elif group.org_id != None or (
+            group.user_id != None and group.user_id != auth.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Not Found group of id :{id}")
+    return group
+
+
+# @app.get("/groups/summary")
+# # async def get_summary(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
+
+# @app.get("/groups/summary/{id}")
+# # async def get_summary_by_id(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
 
 
 @app.post("/groups", response_model=schemas.GroupDisplayModel)
-async def create_group_config(temp_in: schemas.GroupDisplayModel):
-    temp_in.modified_date = datetime.now()
-    gs = models.create_group(temp_in)
-    if gs:
-        return gs
+async def create_group_config(group: schemas.GroupModel, auth: AuthContext = Depends(auth_token)):
+    group.modified_date = datetime.now()
+    if auth.role == Role.SUPER:
+        group = models.create_group(group)
+        if group:
+            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            return group
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid group format")
+    group.user_id = auth.id
+    group.org_id = None
+    if auth.role == Role.ADMIN:
+        group.org_id = auth.organization
+    elif auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED")
+    elif auth.role == Role.PAID:
+        if models.count_group_by_user(auth.id) >= 10:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="already at maximum number of create Group")
+    elif auth.role == Role.GUEST:
+        if models.count_group_by_user(auth.id) >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="already at maximum number of create Group")
+    group = models.create_group(group)
+    if group:
+        return group
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Invalid group format"
-    )
+        detail="invalid group format")
 
+
+@app.put("/groups/{id}", response_model=models.GroupDisplayModel)
+async def update_smtp_config(id: int, group: GroupFormModel, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    if auth.role == Role.SUPER:
+        s = models.update_group(id, group.dict(exclude_unset=True))
+        if s:
+            return s
+    elif auth.role == Role.ADMIN:
+        s = models.get_group_by_id(id)
+        if s and s.org_id == auth.organization:
+            s = models.update_group(id, group.dict(exclude_unset=True))
+            if s:
+                return s
+    elif auth.role == Role.GUEST or auth.role == Role.PAID:
+        s = models.get_group_by_id(id)
+        if s and s.user_id == auth.id:
+            s = models.update_group(id, group.dict(exclude_unset=True))
+            if s:
+                return s
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Group not found")
 
 # @app.put('/groups/{id}', response_model=schemas.GroupDisplayModel)
 # async def modify_group(id: int, temp_in: schemas.GroupFormModel):
 
 
-@app.delete('/groups/{id}')
-async def del_group(id: int):
-    temp = models.delete_group(id)
-    if temp:
-        return {'success': True}
+@app.delete("/groups/{id}")
+async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    if auth.role == Role.SUPER:
+        group = models.delete_group(id)
+        if group:
+            return {'success': True}
+    elif auth.role == Role.ADMIN:
+        group = models.get_group_by_id(id)
+        if group and group.org_id == auth.organization:
+            group = models.delete_group(id)
+            if group:
+                return {'success': True}
+    elif auth.role == Role.GUEST or auth.role == Role.PAID:
+        group = models.get_group_by_id(id)
+        if group and group.user_id == auth.id:
+            group = models.delete_group(id)
+            if group:
+                return {'success': True}
+
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="Not Found"
-    )
-
-###################################################
+        detail="Group not found")
 
 
-@app.get("/campaign", response_model=schemas.CampaignListModel)
-async def get_smtp_configss(page: int | None = 1, limit: int | None = 25):
-    smtp_data = models.get_campaign()
-    if not smtp_data:
-        return schemas.CampaignListModel()
-# if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
-    return models.get_all_campaign(page=page, size=limit)
+# @app.post("/groups/import")
+# async def import_group(auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
+
+# --------------------------------  Campaigns --------------------------------#
 
 
-@app.get("/campaign/{userid}", response_model=schemas.CampaignDisplayModel)
-async def get_smtp_config(userid: int):
-    smtp_config = models.get_campaign_by_id(userid)
-    if not smtp_config:
+@app.get("/campaigns", response_model=schemas.CampaignListModel)
+async def get_campaign_configss(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+    if auth.role == Role.SUPER:
+        return models.get_all_campaign(page, limit)
+    elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+        return models.get_campaign_by_org(auth.organization, page, limit)
+    # read main database
+    return models.get_campaign_by_user(id=auth.id, page=page, size=limit, include_none=True)
+
+
+# async def get_campaign_configss(page: int | None = 1, limit: int | None = 25):
+#     smtp_data = models.get_campaign()
+#     if not smtp_data:
+#         return schemas.CampaignListModel()
+# # if empty in database --> Show {"count": 1,page": 1,"last_page": 2,"limit": 1,"smtp": []}
+#     return models.get_all_campaign(page=page, size=limit)
+
+
+@app.get("/campaigns/{id}", response_model=schemas.CampaignDisplayModel)
+async def get_campaign_config(id: int, auth: AuthContext = Depends(auth_token)):
+    campaign = models.get_campaign_by_id(id)
+    if not campaign:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="campaign not found")
-    return smtp_config
+            detail=f"Not Found campaign of id :{id}")
+    if auth.role == Role.SUPER:
+        return campaign
+    elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+        if campaign.org_id != None and campaign.org_id != auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Not Found campaign of id :{id}")
+        return campaign
+    elif campaign.org_id != None or (
+            campaign.user_id != None and campaign.user_id != auth.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Not Found campaign of id :{id}")
+    return campaign
 
 
-@app.post("/campaign")
-async def create_smtp_config(s: schemas.CampaignModel):
-    form_smtp = schemas.CampaignDisplayModel(user_id=s.user_id,
-                                             name=s.name,
-                                             templates_id=s.templates_id,
-                                             status=s.status,
-                                             url=s.url,
-                                             smtp_id=s.smtp_id)
-    s = models.create_campaign(form_smtp)
-    if s:
-        return {
-            'name': s.name,
-            'templates_id': s.templates_id,
-            'status': s.status,
-            'url': s.url,
-            'smtp_id': s.smtp_id
-        }
+@app.post("/campaigns", response_model=schemas.CampaignDisplayModel)
+async def create_campaign_config(campaign: schemas.CampaignModel, auth: AuthContext = Depends(auth_token)):
+    campaign.create_date = datetime.now()
+    if auth.role == Role.SUPER:
+        campaign = models.create_campaign(campaign)
+        if campaign:
+            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            return campaign
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid campaign format")
+    campaign.user_id = auth.id
+    campaign.org_id = None
+    if auth.role == Role.ADMIN:
+        campaign.org_id = auth.organization
+    elif auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED")
+    elif auth.role == Role.PAID:
+        if models.count_campaign_by_user(auth.id) >= 10:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="already at maximum number of sending profiles")
+    elif auth.role == Role.GUEST:
+        if models.count_campaign_by_user(auth.id) >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="already at maximum number of sending profiles")
+    campaign = models.create_campaign(campaign)
+    if campaign:
+        return campaign
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="invalid format")
+        detail="invalid campaign format")
 
 
-@app.delete("/campaign/{userid}")
-async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
-    existing_smtp = models.get_campaign_by_id(userid)
-    if not existing_smtp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="campaign not found")
-    models.delete_campaign(db, userid)
-    return {"message": "campaign deleted"}
+@app.delete("/campaigns/{id}")
+async def delete_campaign_config(id: int, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(
+        Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+    if auth.role == Role.SUPER:
+        campaign = models.delete_campaign(id)
+        if campaign:
+            return {'success': True}
+    elif auth.role == Role.ADMIN:
+        campaign = models.get_campaign_by_id(id)
+        if campaign and campaign.org_id == auth.organization:
+            campaign = models.delete_campaign(id)
+            if campaign:
+                return {'success': True}
+    elif auth.role == Role.GUEST or auth.role == Role.PAID:
+        campaign = models.get_campaign_by_id(id)
+        if campaign and campaign.user_id == auth.id:
+            campaign = models.delete_campaign(id)
+            if campaign:
+                return {'success': True}
 
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Campaign not found id")
+
+# # @app.get("/campaigns/{id}/results")
+# # async def get_campaign_results(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
+
+
+# # @app.get("/campaigns/{id}/summary")
+# # async def get_campaign_results(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
+
+# # @app.get("/campaigns/{id}/complete")
+# # async def get_campaign_results(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
+
+# # @app.get("/campaigns/{id}/launch")
+# # async def get_campaign_results(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth=auth, roles=(Role.SUPER, Role.ADMIN, Role.AUDITOR))
+#     if auth.role == Role.SUPER:
 
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
