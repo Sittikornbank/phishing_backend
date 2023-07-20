@@ -189,7 +189,8 @@ def create_site_template(temp: SiteModel):
             create_at=temp.create_at,
             visible=temp.visible,
             owner_id=temp.owner_id,
-            org_id=temp.org_id
+            org_id=temp.org_id,
+            phishsite_id=temp.phishsite_id
         )
         db.add(temp)
         db.commit()

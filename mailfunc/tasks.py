@@ -48,6 +48,7 @@ def render_template(template: str, target: Target, ref_key: str, base_url: str):
     ref = random_url_parameter(ref)
     tracking = base_url + "/image/dot.png" + ref
     base_url = base_url + ref
+    print(base_url)
     temp = environment.from_string(template)
     data = target.dict()
     data.update({'tracking': tracking, 'base_url': base_url})

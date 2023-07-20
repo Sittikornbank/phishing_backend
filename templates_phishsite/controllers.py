@@ -19,6 +19,7 @@ import base64
 
 load_dotenv()
 models.Base.metadata.create_all(bind=models.engine)
+IMAGES_FOLDER = os.path.join(os.path.dirname(__file__), "images")
 
 
 app = FastAPI()
@@ -31,8 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/images", StaticFiles(directory=os.path.dirname(
-    os.path.realpath(__file__))+"/images"), name="images")
+app.mount("/images", StaticFiles(directory=IMAGES_FOLDER), name="images")
 
 
 @app.exception_handler(RequestValidationError)
@@ -139,9 +139,6 @@ async def get_site_template(temp_id: int, token: str = Depends(get_token)):
     )
 
 
-IMAGES_FOLDER = "templates_phishsite/images"
-
-
 @app.post('/site_templates', response_model=schemas.SiteModel)
 async def add_site_template(temp_in: schemas.SiteModel, token: str = Depends(get_token)):
     await check_permission(token, (Role.SUPER,))
@@ -177,12 +174,16 @@ async def modify_site_template(temp_id: int, temp_in: schemas.SiteFormModel,
         t['capture_passwords'] = temp_in.capture_passwords
     if temp_in.redirect_url != None:
         t['redirect_url'] = temp_in.redirect_url
+    if temp_in.phishsite_id != None:
+        t['phishsite_id'] = temp_in.phishsite_id
     if temp_in.image_site != None:
         temp_in = validate_and_set_image(temp_in)
         t['image_site'] = temp_in.image_site
     temp = models.update_site_temp(id=temp_id, temp_in=t)
     if temp:
         return temp
+    elif temp_in.image_site:
+        delete_image(temp_in.image_site)
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Not Found"
@@ -195,9 +196,7 @@ async def del_site_template(temp_id: int, token: str = Depends(get_token)):
     temp = models.get_site_template_by_id(temp_id)
     if temp:
         if temp.image_site:
-            image_path = os.path.join(IMAGES_FOLDER, temp.image_site)
-            if os.path.exists(image_path):
-                os.remove(image_path)
+            delete_image(temp.image_site)
 
         models.delete_site_temp(temp_id)
         return {'success': True}
@@ -280,9 +279,7 @@ async def del_email_template(temp_id: int, token: str = Depends(get_token)):
     temp = models.get_email_template_by_id(temp_id)
     if temp:
         if temp.image_email:
-            image_path = os.path.join(IMAGES_FOLDER, temp.image_email)
-            if os.path.exists(image_path):
-                os.remove(image_path)
+            delete_image(temp.image_email)
 
         models.delete_email_temp(temp_id)
         return {'success': True}
@@ -459,7 +456,8 @@ def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Landing Task with ref_key already existed."
         )
-    setattr(mail, "base_url", site.phishsite_id)
+    url = models.get_phishsite_by_id(site.phishsite_id).uri
+    setattr(mail, "base_url", url)
     return mail
 
 
@@ -508,7 +506,7 @@ def validate_and_set_image(temp_in:
         print(e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid base64 encoding or format --> data:image/png;base64"
+            detail="Invalid base64 encoding or format is not 'data:image/png;base64,'"
         )
 
     iname = ''.join(choices('abcdefghijklmnopqrstuvwxyz', k=8))
@@ -522,6 +520,12 @@ def validate_and_set_image(temp_in:
     elif hasattr(temp_in, 'image_email'):
         temp_in.image_email = image_filename
     return temp_in
+
+
+def delete_image(name: str):
+    image_path = os.path.join(IMAGES_FOLDER, name)
+    if os.path.exists(image_path):
+        os.remove(image_path)
 
 
 if __name__ == "__main__":
