@@ -145,4 +145,5 @@ async def delete_smtp_config(userid: int, db: Session = Depends(get_db)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=os.getenv('HOST'), port=os.getenv('PORT'))
+    models.init_org_db()
+    uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))
