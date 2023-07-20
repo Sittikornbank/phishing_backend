@@ -23,6 +23,7 @@ SECRET = None
 ID = None
 environment = jinja2.Environment()
 
+
 @app.get("/", response_class=HTMLResponse)
 async def index(ref: str | None = None):
     if not ref:
@@ -78,6 +79,20 @@ async def get_image(ref: str | None = None):
     return Response(status_code=404)
 
 
+@app.get(
+    "/image/Logo.png",
+    responses={
+        200: {
+            "content": {"image/png": {}}
+        }
+    },
+    response_class=Response
+)
+async def get_image(ref: str | None = None):
+    dot = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00\x04gAMA\x00\x00\xb1\x8f\x0b\xfca\x05\x00\x00\x00\tpHYs\x00\x00\x12t\x00\x00\x12t\x01\xdef\x1fx\x00\x00\x00\x0cIDAT\x18Wc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\xa75\x81\x84\x00\x00\x00\x00IEND\xaeB`\x82'
+    return Response(content=dot, media_type="image/png")
+
+
 @app.get("/robots.txt", response_class=PlainTextResponse)
 def robots():
     return 'User-agent: *\nDisallow: /'
@@ -104,8 +119,8 @@ def create_token():
 
 def validate_token(ref_key: str):
     try:
-        data =  jwt.decode(ref_key, SECRET, algorithms=["HS256"])
-        print(ID,data['id'])
+        data = jwt.decode(ref_key, SECRET, algorithms=["HS256"])
+        print(ID, data['id'])
         if data['id'] == ID:
             return True
     except Exception as e:
@@ -117,8 +132,8 @@ async def emit_event(event_type: str, ref, payload: str | None = None):
     async with AsyncClient() as client:
         try:
             token = create_token()
-            res = await client.post(API,headers={'Authorization':f'Bearer {token}'}, json={'ref_key': ref[:4], 'ref_id': ref[4:],
-                                               'event_type': event_type, 'payload': payload})
+            res = await client.post(API, headers={'Authorization': f'Bearer {token}'}, json={'ref_key': ref[:4], 'ref_id': ref[4:],
+                                                                                             'event_type': event_type, 'payload': payload})
             if res.status_code == 200:
                 return res.json()
         except Exception as e:
@@ -130,7 +145,7 @@ if __name__ == "__main__":
         host = sys.argv[1]
         port = sys.argv[2]
         sect = sys.argv[3]
-        idd  = sys.argv[4]
+        idd = sys.argv[4]
     else:
         host = input('HOST IP (0.0.0.0): ')
         port = input('HOST PORT (8080): ')
@@ -151,5 +166,6 @@ if __name__ == "__main__":
     else:
         ID = 1
 
-    logger.info(f"Phishsite Worker ID:{ID} SECRET:{SECRET[0]+'*'*(len(SECRET)-1)}")
+    logger.info(
+        f"Phishsite Worker ID:{ID} SECRET:{SECRET[0]+'*'*(len(SECRET)-1)}")
     uvicorn.run(app, host=host, port=port)
