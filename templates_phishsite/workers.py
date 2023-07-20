@@ -12,8 +12,6 @@ load_dotenv()
 
 SECRET = os.getenv("SECRET")
 tasks: dict[str, Task] = dict()
-tasks['abcd'] = Task(ref_key='abcd', ref_ids=['ddd1', 'ddd2'], start_at=int(
-    time()), site=get_site_template_by_id(1), worker_id=1, user_id=1, org_id=1)
 
 
 def create_token(worker: Phishsite):
@@ -97,8 +95,10 @@ def get_dotpng(context: EventContext, wid: int):
 
 
 def add_landing_task(req: TemplateReqModel, site: SiteModel, auth: AuthContext):
+    if site.phishsite_id == None:
+        return False
     task = Task(ref_key=req.ref_key, ref_ids=req.ref_ids,
-                site=site, worker_id=1, start_at=req.start_at,
+                site=site, worker_id=site.phishsite_id, start_at=req.start_at,
                 org_id=auth.organization, user_id=auth.id)
     if req.ref_key in tasks:
         return False

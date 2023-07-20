@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from auth import AuthContext, get_token, protect_api
 import schemas
-from controllers import launch_template, process_before_launch, launch_email
+from controllers import (launch_template, process_before_launch,
+                         launch_email, stop_template)
 import os
 
 load_dotenv()
@@ -46,25 +47,35 @@ async def launch(model: schemas.LaunchModel, _=Depends(get_token)):
                                     template_id=model.campaign.templates_id,
                                     start_at=int(model.campaign.launch_date.timestamp()))
     email_temp = await launch_template(req=reqt, auth=model.auth)
-    print(c.ref, reqt.ref_ids)
+    duration = calculate_duration(
+        model.campaign.launch_date, model.campaign.send_by_date)
     reqm = schemas.EmailReqModel(task_id=c.ref,
                                  smtp_id=model.campaign.smtp_id,
                                  sender=email_temp.envelope_sender,
                                  html=email_temp.html,
                                  subject=email_temp.subject,
                                  attachments=email_temp.attachments,
-                                 duration=1,
+                                 duration=duration,
                                  targets=c.targets,
                                  base_url=email_temp.base_url
                                  )
     try:
         res = await launch_email(req=reqm, auth=model.auth)
         if res:
-            print('success launch')
-            return True
-    except Exception as e:
-        print(e)
-        False
+            return {'success': True}
+    except HTTPException as e:
+        await stop_template(ref_key=c.ref, auth=model.auth)
+        raise e
+    await stop_template(ref_key=c.ref, auth=model.auth)
+    return {'success': False}
+
+
+def calculate_duration(start: datetime, stop: datetime):
+    differ = int(stop.timestamp()) - int(start.timestamp())
+    if differ < 0:
+        return 0
+    return differ
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

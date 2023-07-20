@@ -54,6 +54,7 @@ class SiteModel(ParentModel):
     capture_credentials: bool = False
     capture_passwords: bool = False
     redirect_url: str = ""
+    phishsite_id: int | None = None
     image_site: str = ""
 
     class Config:
@@ -81,6 +82,7 @@ class SiteFormModel(SiteModel):
     visible: Visible | None = None
     owner_id: int | None = None
     org_id: int | None = None
+    phishsite_id: int | None = None
 
 
 class EmailFormModel(EmailModel):

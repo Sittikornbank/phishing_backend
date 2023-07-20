@@ -85,6 +85,19 @@ async def launch_template(req: TemplateReqModel, auth: AuthContext):
                 detail="INTERNAL SERVER ERROR, Cannot get Templates")
 
 
+async def stop_template(ref_key: str, auth: AuthContext):
+    async with AsyncClient() as client:
+        try:
+            header = {'Authorization': f'Bearer {API_KEY}'}
+            json = auth.dict()
+            json.update({'ref_key': ref_key})
+            res = await client.delete(TEMPLATES_URI, json=json, headers=header)
+
+        except Exception as e:
+            print(e)
+    return False
+
+
 async def launch_email(req: EmailReqModel, auth: AuthContext):
     async with AsyncClient() as client:
         try:

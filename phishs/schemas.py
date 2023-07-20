@@ -60,6 +60,7 @@ class SMTPModel(BaseModel):
 
 
 class Target(BaseModel):
+    id: int
     ref: str = ''
     firstname: str = ''
     lastname: str = ''
@@ -76,7 +77,7 @@ class EmailReqModel(BaseModel):
     html: str = ""
     attachments: list[str] = []
     status: Status = Status.IDLE
-    duration: int | None = Field(gt=0)
+    duration: int | None = Field(ge=0)
     targets: list[Target] = []
     base_url: str = ""
 
@@ -112,10 +113,6 @@ class LaunchModel(BaseModel):
 class CampaignManager(BaseModel):
     id: int | None
     ref: str
-    mail_sent: int = 0
-    mail_open: int = 0
-    mail_click: int = 0
-    mail_submit: int = 0
     start_date: datetime | None
     end_date: datetime | None
     email_template: EmailSchema | None = None

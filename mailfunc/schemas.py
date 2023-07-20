@@ -164,7 +164,7 @@ class TaskModel(BaseModel):
     attachments: list[str] = []
     status: Status = Status.IDLE
     sent: int = 0
-    duration: int = Field(gt=0)
+    duration: int = Field(ge=0)
     targets: list[Target] = []
     auth: AuthContext
     base_url: str

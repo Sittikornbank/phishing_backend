@@ -19,6 +19,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+class Phishsite(Base):
+    __tablename__ = "phishsites"
+
+    id = Column(Integer, primary_key=True, index=True,
+                autoincrement=True, unique=True)
+    name = Column(String(256), nullable=False)
+    uri = Column(Text, nullable=False)
+    secret_key = Column(String(512))
+
+
 class SiteTemplate(Base):
     __tablename__ = "site_templates"
 
@@ -35,6 +45,8 @@ class SiteTemplate(Base):
     visible = Column(String(32), default=Visible.NONE)
     owner_id = Column(Integer, default=None)
     org_id = Column(Integer, default=None)
+    phishsite_id = Column(Integer,
+                          ForeignKey('phishsites.id', ondelete='SET NULL',))
 
 
 class EmailTemplate(Base):
@@ -72,16 +84,6 @@ class Template(Base):
     visible = Column(String(32), default=Visible.NONE)
     owner_id = Column(Integer, default=None)
     org_id = Column(Integer, default=None)
-
-
-class Phishsite(Base):
-    __tablename__ = "phishsites"
-
-    id = Column(Integer, primary_key=True, index=True,
-                autoincrement=True, unique=True)
-    name = Column(String(256), nullable=False)
-    uri = Column(Text, nullable=False)
-    secret_key = Column(String(512))
 
 
 def get_db():
@@ -187,7 +189,8 @@ def create_site_template(temp: SiteModel):
             create_at=temp.create_at,
             visible=temp.visible,
             owner_id=temp.owner_id,
-            org_id=temp.org_id
+            org_id=temp.org_id,
+            phishsite_id=temp.phishsite_id
         )
         db.add(temp)
         db.commit()
