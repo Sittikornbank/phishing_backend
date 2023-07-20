@@ -172,6 +172,59 @@ def get_smtps_by_org(id: int, page: int | None = None, size: int | None = None, 
     return SMTPListModel()
 
 
+# def get_imap_by_user(id: int, page: int | None = None, size: int | None = None, include_none: bool = False):
+#     db: Session = next(get_db())
+#     try:
+#         if not size or size < 0:
+#             size = 25
+#         if not page or page < 0:
+#             page = 1
+#         if include_none:
+#             imaps = db.query(IMAP).filter(
+#                 IMAP.user_id == id or IMAP.user_id == None).limit(size).offset(size*(page-1)).all()
+#             count = db.query(IMAP).filter(
+#                 IMAP.user_id == id or IMAP.user_id == None).count()
+#         imaps = db.query(IMAP).filter(
+#             IMAP.user_id == id).limit(size).offset(size*(page-1)).all()
+#         count = db.query(IMAP).filter(
+#             IMAP.user_id == id).count()
+
+#         return IMAPListModel(count=count,
+#                              page=page,
+#                              limit=size,
+#                              last_page=(count//size)+1,
+#                              imap=imaps)
+#     except Exception as e:
+#         print(e)
+#     return IMAPListModel()
+
+
+# def get_imap_by_org(id: int, page: int | None = None, size: int | None = None, include_none: bool = False):
+#     db: Session = next(get_db())
+#     try:
+#         if not size or size < 0:
+#             size = 25
+#         if not page or page < 0:
+#             page = 1
+#         if include_none:
+#             imaps = db.query(IMAP).filter(
+#                 IMAP.org_id == id or IMAP.org_id == None).limit(size).offset(size*(page-1)).all()
+#             count = db.query(IMAP).filter(
+#                 IMAP.org_id == id or IMAP.org_id == None).count()
+#         imaps = db.query(IMAP).filter(
+#             IMAP.org_id == id).limit(size).offset(size*(page-1)).all()
+#         count = db.query(SMTP).filter(
+#             IMAP.org_id == id).count()
+
+#         return IMAPListModel(count=count,
+#                              page=page,
+#                              limit=size,
+#                              last_page=(count//size)+1,
+#                              imap=imaps)
+#     except Exception as e:
+#         print(e)
+#     return IMAPListModel()
+
 def count_smtp_by_user(user_id: int):
     db: Session = next(get_db())
     try:
