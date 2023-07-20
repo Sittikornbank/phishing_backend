@@ -274,6 +274,88 @@ async def check_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
     return {"message": "IMAP configuration is valid"}
 
 
+# @app.get("/imap", response_model=IMAPListModel)
+# async def get_imap_configss(
+#         page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+#     if auth.role == Role.SUPER:
+#         return models.get_all_imap(page=page, size=limit)
+#     elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+#         return models.get_imap_by_org(id=auth.organization, page=page, size=limit, include_none=True)
+#     return models.get_imap_by_user(id=auth.id, page=page, size=limit, include_none=True)
+
+
+# @app.get("/imap/{id}", response_model=IMAPDisplayModel)
+# async def get_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
+#     imap_config = models.get_imap_id(id)
+#     if not imap_config:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="IMAP not found")
+#     if auth.role == Role.SUPER:
+#         return imap_config
+#     elif auth.role == Role.AUDITOR or auth.role == Role.ADMIN:
+#         if imap_config.org_id != None and imap_config.org_id != auth.organization:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="IMAP not found")
+#         return imap_config
+#     elif imap_config.org_id != None or (
+#             imap_config.user_id != None and imap_config.user_id != auth.id):
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="IMAP not found")
+#     return imap_config
+
+
+# @app.post('/imap', response_model=IMAPDisplayModel)
+# async def create_imap_config(imap: IMAPModel, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth, roles=(
+#         Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+#     imap.modified_date = datetime.now()
+#     created_imap = models.create_imap(imap)
+#     if created_imap:
+#         return created_imap
+#     raise HTTPException(
+#         status_code=status.HTTP_400_BAD_REQUEST,
+#         detail="Invalid IMAP format")
+
+
+# @app.put('/imap/{id}', response_model=IMAPDisplayModel)
+# async def update_imap_config(
+#         id: int, imap: IMAPFormModel, auth: AuthContext = Depends(auth_token)):
+#     updated_imap = models.update_imap(id, imap.dict(exclude_unset=True))
+#     if updated_imap:
+#         return updated_imap
+#     raise HTTPException(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         detail="IMAP not found")
+
+
+# @app.delete("/imap/{id}")
+# async def delete_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
+#     auth_permission(auth, roles=(
+#         Role.ADMIN, Role.SUPER, Role.GUEST, Role.PAID))
+#     if auth.role == Role.SUPER:
+#         s = models.delete_imap(id)
+#         if s:
+#             return {'success': s}
+#     elif auth.role == Role.ADMIN:
+#         s = models.get_imap_id(id)
+#         if s and s.org_id == auth.organization:
+#             s = models.delete_imap(id)
+#             if s:
+#                 return {'success': s}
+#     elif auth.role == Role.GUEST or auth.role == Role.PAID:
+#         s = models.get_imap_id(id)
+#         if s and s.user_id == auth.id:
+#             s = models.delete_imap(id)
+#             if s:
+#                 return {'success': s}
+
+#     raise HTTPException(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         detail="IMAP not found")
+
 @app.post("/mailing")
 async def create_and_start_task(task: TaskModel, _=Depends(protect_api)):
     print(task.smtp_id)
