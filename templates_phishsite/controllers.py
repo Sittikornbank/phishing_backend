@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from auth import get_token, check_permission, check_token, protect_api, auth_token, auth_permission
+from auth import get_token, protect_api, auth_token, auth_permission
 from schemas import Role, Visible, AuthContext
 import os
 import schemas
@@ -50,19 +50,27 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.get('/templates', response_model=schemas.TemplateListModel)
 async def get_templates(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
-    return models.get_all_templates(page=page, size=limit)
+    if auth.role == Role.SUPER:
+        return models.get_all_templates(page=page, size=limit, show_none=True)
+    return models.get_all_templates(page=page, size=limit, show_none=False)
 
 
 @app.get('/templates/{temp_id}', response_model=schemas.TemplateDisplayModel)
 async def get_template(temp_id: int, auth: AuthContext = Depends(auth_token)):
-
     temp = models.get_template_by_id(temp_id)
-    if temp:
+    if not temp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found"
+        )
+    if auth.role == Role.SUPER:
         return temp
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Not Found"
-    )
+    elif temp.visible == Visible.NONE:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found"
+        )
+    return temp
 
 
 @app.post('/templates', response_model=schemas.TemplateModel)
@@ -82,7 +90,7 @@ async def add_template(temp_in: schemas.TemplateModel,
 @app.put('/templates/{temp_id}', response_model=schemas.TemplateModel)
 async def modify_template(temp_id: int, temp_in: schemas.TemplateFromModel,
                           auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     t = dict()
     t['modified_date'] = datetime.now()
     if temp_in.name:
@@ -110,7 +118,7 @@ async def modify_template(temp_id: int, temp_in: schemas.TemplateFromModel,
 
 @app.delete('/templates/{temp_id}')
 async def del_template(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.delete_template(temp_id)
     if temp:
         return {'success': temp}
@@ -123,13 +131,13 @@ async def del_template(temp_id: int, auth: AuthContext = Depends(get_token)):
 @app.get('/site_templates', response_model=schemas.SiteListModel)
 async def get_site_templates(page: int | None = 1, limit: int | None = 25,
                              auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     return models.get_all_site_templates(page=page, size=limit)
 
 
 @app.get('/site_templates/{temp_id}', response_model=schemas.SiteModel)
 async def get_site_template(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.get_site_template_by_id(id=temp_id)
     if temp:
         return temp
@@ -141,7 +149,7 @@ async def get_site_template(temp_id: int, auth: AuthContext = Depends(get_token)
 
 @app.post('/site_templates', response_model=schemas.SiteModel)
 async def add_site_template(temp_in: schemas.SiteModel, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp_in.create_at = datetime.now()
     temp_in = validate_and_set_image(temp_in)
     temp = models.create_site_template(temp=temp_in)
@@ -156,7 +164,7 @@ async def add_site_template(temp_in: schemas.SiteModel, auth: AuthContext = Depe
 @app.put('/site_templates/{temp_id}', response_model=schemas.SiteModel)
 async def modify_site_template(temp_id: int, temp_in: schemas.SiteFormModel,
                                auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     t = dict()
     if temp_in.name:
         t['name'] = temp_in.name
@@ -192,7 +200,7 @@ async def modify_site_template(temp_id: int, temp_in: schemas.SiteFormModel,
 
 @app.delete('/site_templates/{temp_id}')
 async def del_site_template(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.get_site_template_by_id(temp_id)
     if temp:
         if temp.image_site:
@@ -209,13 +217,13 @@ async def del_site_template(temp_id: int, auth: AuthContext = Depends(get_token)
 @app.get('/email_templates', response_model=schemas.EmailListModel)
 async def get_email_templates(page: int | None = 1, limit: int | None = 25,
                               auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     return models.get_all_email_templates(page=page, size=limit)
 
 
 @app.get('/email_templates/{temp_id}', response_model=schemas.EmailModel)
 async def get_email_template(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.get_email_template_by_id(id=temp_id)
     if temp:
         return temp
@@ -228,7 +236,7 @@ async def get_email_template(temp_id: int, auth: AuthContext = Depends(get_token
 @app.post('/email_templates', response_model=schemas.EmailModel)
 async def add_email_template(temp_in: schemas.EmailModel,
                              auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp_in.create_at = datetime.now()
     temp_in = validate_and_set_image(temp_in)
     temp = models.create_email_template(temp=temp_in)
@@ -243,7 +251,7 @@ async def add_email_template(temp_in: schemas.EmailModel,
 @app.put('/email_templates/{temp_id}', response_model=schemas.EmailModel)
 async def modify_email_template(temp_id: int, temp_in: schemas.EmailFormModel,
                                 auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     t = dict()
     if temp_in.name:
         t['name'] = temp_in.name
@@ -275,7 +283,7 @@ async def modify_email_template(temp_id: int, temp_in: schemas.EmailFormModel,
 
 @app.delete('/email_templates/{temp_id}')
 async def del_email_template(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.get_email_template_by_id(temp_id)
     if temp:
         if temp.image_email:
@@ -292,13 +300,13 @@ async def del_email_template(temp_id: int, auth: AuthContext = Depends(get_token
 @app.get('/phishsites', response_model=schemas.PhishsiteListModel)
 async def get_phishsites(page: int | None = 1, limit: int | None = 25,
                          auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     return models.get_all_phishsites(page=page, size=limit)
 
 
 @app.get('/phishsites/{temp_id}', response_model=schemas.PhishsiteModel)
 async def get_phishsite(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.get_phishsite_by_id(id=temp_id)
     if temp:
         return temp
@@ -311,7 +319,7 @@ async def get_phishsite(temp_id: int, auth: AuthContext = Depends(get_token)):
 @app.post('/phishsites', response_model=schemas.PhishsiteModel)
 async def add_phishsite(temp_in: schemas.PhishsiteModel,
                         auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.create_phishsite(temp_in=temp_in)
     if temp:
         return temp
@@ -324,7 +332,7 @@ async def add_phishsite(temp_in: schemas.PhishsiteModel,
 @app.put('/phishsites/{temp_id}', response_model=schemas.PhishsiteModel)
 async def modify_phishsite(temp_id: int, temp_in: schemas.PhishsiteFromModel,
                            auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     t = dict()
     if temp_in.name:
         t['name'] = temp_in.name
@@ -344,7 +352,7 @@ async def modify_phishsite(temp_id: int, temp_in: schemas.PhishsiteFromModel,
 
 @app.delete('/phishsites/{temp_id}')
 async def del_phishsite(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp = models.delete_phishsite(id=temp_id)
     if temp:
         return {'success': temp}
@@ -356,21 +364,21 @@ async def del_phishsite(temp_id: int, auth: AuthContext = Depends(get_token)):
 
 @app.get('/phishsites/{temp_id}/check')
 async def check_phishsite(temp_id: int, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     return await workers.ping_worker_by_id(temp_id)
 
 
 @app.get('/workers/code')
 async def check_phishsite(lang: str, auth: AuthContext = Depends(get_token)):
-    await check_permission(auth, (Role.SUPER,))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     return workers.code(lang)
 
 
 @app.post('/workers')
-async def handle_worker_post(req: Request, auth: AuthContext = Depends(get_token)):
+async def handle_worker_post(req: Request, token: str = Depends(get_token)):
     body = await req.json()
     if body and 'ref_key' in body and 'ref_id' in body and 'event_type' in body:
-        wid = workers.validate_token(auth)
+        wid = workers.validate_token(token)
         if wid < 1:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
