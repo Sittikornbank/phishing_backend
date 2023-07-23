@@ -52,222 +52,214 @@ class IMAP(Base):
     imap_freq = Column(Integer)
 
 
-def get_db():
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 def get_all_smtp(page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        smtps = db.query(SMTP).limit(size).offset(size*(page-1)).all()
-        count = db.query(SMTP).count()
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            smtps = db.query(SMTP).limit(size).offset(size*(page-1)).all()
+            count = db.query(SMTP).count()
 
-        return SMTPListModel(count=count,
-                             page=page,
-                             limit=size,
-                             last_page=(count//size)+1,
-                             smtp=smtps)
-    except Exception as e:
-        print(e)
-    return SMTPListModel()
+            return SMTPListModel(count=count,
+                                 page=page,
+                                 limit=size,
+                                 last_page=(count//size)+1,
+                                 smtp=smtps)
+        except Exception as e:
+            print(e)
+        return SMTPListModel()
 
 
 def get_all_imap(page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        imaps = db.query(IMAP).limit(size).offset(size*(page-1)).all()
-        count = db.query(IMAP).count()
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            imaps = db.query(IMAP).limit(size).offset(size*(page-1)).all()
+            count = db.query(IMAP).count()
 
-        return IMAPListModel(count=count,
-                             page=page,
-                             limit=size,
-                             last_page=(count//size)+1,
-                             imap=imaps)
-    except Exception as e:
-        print(e)
-    return IMAPListModel()
+            return IMAPListModel(count=count,
+                                 page=page,
+                                 limit=size,
+                                 last_page=(count//size)+1,
+                                 imap=imaps)
+        except Exception as e:
+            print(e)
+        return IMAPListModel()
 
 
 def get_smtp_id(id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(SMTP).filter(SMTP.id == id).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(SMTP).filter(SMTP.id == id).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_imap_id(user_id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(IMAP).filter(IMAP.user_id == user_id).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(IMAP).filter(IMAP.user_id == user_id).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_smtps_by_user(id: int, page: int | None = None, size: int | None = None, include_none: bool = False):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        if include_none:
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            if include_none:
+                smtps = db.query(SMTP).filter(
+                    SMTP.user_id == id or SMTP.user_id == None).limit(size).offset(size*(page-1)).all()
+                count = db.query(SMTP).filter(
+                    SMTP.user_id == id or SMTP.user_id == None).count()
             smtps = db.query(SMTP).filter(
-                SMTP.user_id == id or SMTP.user_id == None).limit(size).offset(size*(page-1)).all()
+                SMTP.user_id == id).limit(size).offset(size*(page-1)).all()
             count = db.query(SMTP).filter(
-                SMTP.user_id == id or SMTP.user_id == None).count()
-        smtps = db.query(SMTP).filter(
-            SMTP.user_id == id).limit(size).offset(size*(page-1)).all()
-        count = db.query(SMTP).filter(
-            SMTP.user_id == id).count()
+                SMTP.user_id == id).count()
 
-        return SMTPListModel(count=count,
-                             page=page,
-                             limit=size,
-                             last_page=(count//size)+1,
-                             smtp=smtps)
-    except Exception as e:
-        print(e)
-    return SMTPListModel()
+            return SMTPListModel(count=count,
+                                 page=page,
+                                 limit=size,
+                                 last_page=(count//size)+1,
+                                 smtp=smtps)
+        except Exception as e:
+            print(e)
+        return SMTPListModel()
 
 
 def get_smtps_by_org(id: int, page: int | None = None, size: int | None = None, include_none: bool = False):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        if include_none:
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            if include_none:
+                smtps = db.query(SMTP).filter(
+                    SMTP.org_id == id or SMTP.org_id == None).limit(size).offset(size*(page-1)).all()
+                count = db.query(SMTP).filter(
+                    SMTP.org_id == id or SMTP.org_id == None).count()
             smtps = db.query(SMTP).filter(
-                SMTP.org_id == id or SMTP.org_id == None).limit(size).offset(size*(page-1)).all()
+                SMTP.org_id == id).limit(size).offset(size*(page-1)).all()
             count = db.query(SMTP).filter(
-                SMTP.org_id == id or SMTP.org_id == None).count()
-        smtps = db.query(SMTP).filter(
-            SMTP.org_id == id).limit(size).offset(size*(page-1)).all()
-        count = db.query(SMTP).filter(
-            SMTP.org_id == id).count()
+                SMTP.org_id == id).count()
 
-        return SMTPListModel(count=count,
-                             page=page,
-                             limit=size,
-                             last_page=(count//size)+1,
-                             smtp=smtps)
-    except Exception as e:
-        print(e)
-    return SMTPListModel()
+            return SMTPListModel(count=count,
+                                 page=page,
+                                 limit=size,
+                                 last_page=(count//size)+1,
+                                 smtp=smtps)
+        except Exception as e:
+            print(e)
+        return SMTPListModel()
 
 
 def count_smtp_by_user(user_id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(SMTP).filter(SMTP.user_id == user_id).count()
-    except Exception as e:
-        print(e)
-    return 0
+    with SessionLocal() as db:
+        try:
+            return db.query(SMTP).filter(SMTP.user_id == user_id).count()
+        except Exception as e:
+            print(e)
+        return 0
 
 
 def create_smtp(smtp: SMTPModel):
-    db: Session = next(get_db())
-    try:
-        send = SMTP(user_id=smtp.user_id,
-                    org_id=smtp.org_id,
-                    interface_type=smtp.interface_type,
-                    name=smtp.name,
-                    host=smtp.host,
-                    username=smtp.username,
-                    password=smtp.password,
-                    from_address=smtp.from_address,
-                    ignore_cert_errors=smtp.ignore_cert_errors,
-                    modified_date=smtp.modified_date)
-        db.add(send)
-        db.commit()
-        db.refresh(send)
-        return send
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            send = SMTP(user_id=smtp.user_id,
+                        org_id=smtp.org_id,
+                        interface_type=smtp.interface_type,
+                        name=smtp.name,
+                        host=smtp.host,
+                        username=smtp.username,
+                        password=smtp.password,
+                        from_address=smtp.from_address,
+                        ignore_cert_errors=smtp.ignore_cert_errors,
+                        modified_date=smtp.modified_date)
+            db.add(send)
+            db.commit()
+            db.refresh(send)
+            return send
+        except Exception as e:
+            print(e)
+        return
 
 
 def create_imap(imap: IMAPDisplayModel):
-    db: Session = next(get_db())
-    try:
-        read = IMAP(user_id=imap.user_id,
-                    enabled=imap.enabled,
-                    host=imap.host,
-                    port=imap.port,
-                    username=imap.username,
-                    password=imap.password,
-                    tls=imap.tls,
-                    ignore_cert_errors=imap.ignore_cert_errors,
-                    folder=imap.folder,
-                    restrict_domain=imap.restrict_domain,
-                    delete_reported_campaign_email=imap.delete_reported_campaign_email,
-                    last_login=imap.last_login,
-                    imap_freq=imap.imap_freq,
-                    modified_date=imap.modified_date)
-        db.add(read)
-        db.commit()
-        db.refresh(read)
-        return read
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            read = IMAP(user_id=imap.user_id,
+                        enabled=imap.enabled,
+                        host=imap.host,
+                        port=imap.port,
+                        username=imap.username,
+                        password=imap.password,
+                        tls=imap.tls,
+                        ignore_cert_errors=imap.ignore_cert_errors,
+                        folder=imap.folder,
+                        restrict_domain=imap.restrict_domain,
+                        delete_reported_campaign_email=imap.delete_reported_campaign_email,
+                        last_login=imap.last_login,
+                        imap_freq=imap.imap_freq,
+                        modified_date=imap.modified_date)
+            db.add(read)
+            db.commit()
+            db.refresh(read)
+            return read
+        except Exception as e:
+            print(e)
+        return
 
 
 def update_smtp(id: int, smtp: dict):
-    db: Session = next(get_db())
-    try:
-        db.query(SMTP).filter(SMTP.id == id).update(smtp)
-        db.commit()
-        return get_smtp_id(id)
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            db.query(SMTP).filter(SMTP.id == id).update(smtp)
+            db.commit()
+            return get_smtp_id(id)
+        except Exception as e:
+            print(e)
+        return
 
 
 def update_imap(user_id: int, imap: dict):
-    db: Session = next(get_db())
-    try:
-        db.query(IMAP).filter(IMAP.user_id == user_id).update(imap)
-        db.commit()
-        return get_imap_id(user_id)
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            db.query(IMAP).filter(IMAP.user_id == user_id).update(imap)
+            db.commit()
+            return get_imap_id(user_id)
+        except Exception as e:
+            print(e)
+        return
 
 
 def delete_smtp(id: int):
-    db: Session = next(get_db())
-    try:
-        c = db.query(SMTP).filter(SMTP.id == id).delete()
-        db.commit()
-        return c > 0
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            c = db.query(SMTP).filter(SMTP.id == id).delete()
+            db.commit()
+            return c > 0
+        except Exception as e:
+            print(e)
+        return
 
 
 def delete_imap(user_id: int):
-    db: Session = next(get_db())
-    try:
-        c = db.query(IMAP).filter(IMAP.user_id == user_id).delete()
-        db.commit()
-        return c > 0
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            c = db.query(IMAP).filter(IMAP.user_id == user_id).delete()
+            db.commit()
+            return c > 0
+        except Exception as e:
+            print(e)
+        return
