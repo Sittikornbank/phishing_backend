@@ -20,6 +20,18 @@ class Status(str, Enum):
     FAIL = 'fail'
 
 
+class EVENT(str, Enum):
+    CREATE = 'create_campaign'
+    LAUNCH = 'launch_campaign'
+    COMPLETE = 'complete_campaign'
+    FAIL = 'campaign_fail'
+    SEND = 'send_email'
+    OPEN = 'open_email'
+    CLICK = 'click_link'
+    SUBMIT = 'submit_data'
+    REPORT = 'report'
+
+
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
@@ -90,7 +102,7 @@ class GroupSumModel(BaseModel):
 
 
 class GroupSumListModel(BaseListModel):
-    groups: List[GroupDisplayModel] = []
+    groups: List[GroupSumModel] = []
 
 
 class GroupSuperSumListModel(GroupSumListModel):
@@ -105,9 +117,10 @@ class CampaignModel(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     create_date: datetime = datetime.now()
     complate: datetime | None = None
-    templates_id: int | None = None
+    templates_id: int
     status: Status = Status.IDLE
-    smtp_id: int | None = None
+    smtp_id: int
+    group_id: int
     launch_date: datetime = datetime.now()
     send_by_date: datetime | None = None
 
@@ -140,4 +153,25 @@ class CampaignDisplayModel(BaseModel):
 
 
 class CampaignListModel(BaseListModel):
-    campaign: list[CampaignDisplayModel] = []
+    campaigns: list[CampaignDisplayModel] = []
+
+
+class Summary(BaseModel):
+    total: int = Field(ge=0, default=0)
+    sent: int = Field(ge=0, default=0)
+    opened: int = Field(ge=0, default=0)
+    clicked: int = Field(ge=0, default=0)
+    submitted: int = Field(ge=0, default=0)
+    reported: int = Field(ge=0, default=0)
+    failed: int = Field(ge=0, default=0)
+
+    class Config:
+        orm_mode = True
+
+
+class CampaignSummaryModel(CampaignDisplayModel):
+    status: Summary | None
+
+
+class CampaignSumListModel(BaseListModel):
+    campaigns: list[CampaignSummaryModel] = []
