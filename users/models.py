@@ -34,157 +34,150 @@ class User(Base):
     is_active = Column(Boolean, default=False)
 
 
-def get_db():
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 def get_all_users(page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    try:
-        if not page and not size:
-            users = db.query(User).all()
-            return {'users': users, 'count': len(users), 'page': 1, 'limit': len(users)}
+    with SessionLocal() as db:
+        try:
+            if not page and not size:
+                users = db.query(User).all()
+                return {'users': users, 'count': len(users), 'page': 1, 'limit': len(users)}
 
-        if page and not size:
-            size = 25
-        elif not page and size:
-            page = 1
-        if page < 0:
-            page = 1
-        if size < 0:
-            size = 25
-        count = db.query(User).count()
-        users = db.query(User).limit(size).offset(size*(page-1)).all()
-        return {'users': users, 'count': count, 'page': page, 'limit': size}
+            if page and not size:
+                size = 25
+            elif not page and size:
+                page = 1
+            if page < 0:
+                page = 1
+            if size < 0:
+                size = 25
+            count = db.query(User).count()
+            users = db.query(User).limit(size).offset(size*(page-1)).all()
+            return {'users': users, 'count': count, 'page': page, 'limit': size}
 
-    except Exception as e:
-        print(e)
-    return
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_user_by_organize(organiz: str, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    if organiz == 'None':
+    with SessionLocal() as db:
+        if organiz == 'None':
+            return
+        try:
+            if not page and not size:
+                users = db.query(User).filter(
+                    User.organization == organiz).all()
+                return {'users': users, 'count': len(users), 'page': 1, 'limit': len(users)}
+
+            if page and not size:
+                size = 25
+            elif not page and size:
+                page = 1
+            if page < 0:
+                page = 1
+            if size < 0:
+                size = 25
+            count = db.query(User).filter(User.organization == organiz).count()
+            users = db.query(User).filter(User.organization == organiz).limit(
+                size).offset(size*(page-1)).all()
+            return {'users': users, 'count': count, 'page': page, 'limit': size}
+
+        except Exception as e:
+            print(e)
         return
-    try:
-        if not page and not size:
-            users = db.query(User).filter(User.organization == organiz).all()
-            return {'users': users, 'count': len(users), 'page': 1, 'limit': len(users)}
-
-        if page and not size:
-            size = 25
-        elif not page and size:
-            page = 1
-        if page < 0:
-            page = 1
-        if size < 0:
-            size = 25
-        count = db.query(User).filter(User.organization == organiz).count()
-        users = db.query(User).filter(User.organization == organiz).limit(
-            size).offset(size*(page-1)).all()
-        return {'users': users, 'count': count, 'page': page, 'limit': size}
-
-    except Exception as e:
-        print(e)
-    return
 
 
 def get_user_by_id(id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(User).filter(User.id == id).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(User).filter(User.id == id).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def check_email_username_inuse(email: str, username: str):
-    db: Session = next(get_db())
-    result = {'email': False, 'username': False}
-    try:
-        if email:
-            temp = db.query(User).filter(User.email == email).first()
-            if temp:
-                result['email'] = True
-        if username:
-            temp = db.query(User).filter(User.username == username).first()
-            if temp:
-                result['username'] = True
-        return result
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        result = {'email': False, 'username': False}
+        try:
+            if email:
+                temp = db.query(User).filter(User.email == email).first()
+                if temp:
+                    result['email'] = True
+            if username:
+                temp = db.query(User).filter(User.username == username).first()
+                if temp:
+                    result['username'] = True
+            return result
+        except Exception as e:
+            print(e)
+        return
 
 
 def create_user(user_in: UserDbModel):
-    db: Session = next(get_db())
-    try:
-        user = User(username=user_in.username,
-                    email=user_in.email,
-                    firstname=user_in.firstname,
-                    lastname=user_in.lastname,
-                    password=user_in.password,
-                    role=user_in.role.value,
-                    organization=user_in.organization,
-                    phonenumber=user_in.phonenumber,
-                    create_at=user_in.create_at,
-                    is_active=user_in.is_active)
-        user.password = (bcrypt.hashpw(user.password.encode(
-            'utf-8'), bcrypt.gensalt())).decode('utf-8')
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        return user
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            user = User(username=user_in.username,
+                        email=user_in.email,
+                        firstname=user_in.firstname,
+                        lastname=user_in.lastname,
+                        password=user_in.password,
+                        role=user_in.role.value,
+                        organization=user_in.organization,
+                        phonenumber=user_in.phonenumber,
+                        create_at=user_in.create_at,
+                        is_active=user_in.is_active)
+            user.password = (bcrypt.hashpw(user.password.encode(
+                'utf-8'), bcrypt.gensalt())).decode('utf-8')
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            return user
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_user_by_email(email: str):
-    db: Session = next(get_db())
-    try:
-        return db.query(User).filter(User.email == email).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(User).filter(User.email == email).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def update_user(id: int, user_in: dict):
-    db: Session = next(get_db())
-    try:
-        if 'password' in user_in:
-            user_in['password'] = (bcrypt.hashpw(user_in['password'].encode(
-                'utf-8'), bcrypt.gensalt())).decode('utf-8')
-        db.query(User).filter(User.id == id).update(user_in)
-        db.commit()
-        return get_user_by_id(id)
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            if 'password' in user_in:
+                user_in['password'] = (bcrypt.hashpw(user_in['password'].encode(
+                    'utf-8'), bcrypt.gensalt())).decode('utf-8')
+            db.query(User).filter(User.id == id).update(user_in)
+            db.commit()
+            return get_user_by_id(id)
+        except Exception as e:
+            print(e)
+        return
 
 
 def update_last_login(id: int):
-    db: Session = next(get_db())
-    try:
-        db.query(User).filter(User.id == id).update(
-            {'last_login': datetime.now()})
-        db.commit()
-        return True
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            db.query(User).filter(User.id == id).update(
+                {'last_login': datetime.now()})
+            db.commit()
+            return True
+        except Exception as e:
+            print(e)
+        return
 
 
 def delete_user(id: int):
-    db: Session = next(get_db())
-    try:
-        db.query(User).filter(User.id == id).delete()
-        db.commit()
-        return True
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            db.query(User).filter(User.id == id).delete()
+            db.commit()
+            return True
+        except Exception as e:
+            print(e)
+        return
