@@ -491,7 +491,19 @@ def get_campaigns_sum_by_org(org_id: int, page: int | None = None, size: int | N
 
 
 def get_campaign_result_by_id(id: int):
-    db: Session = next(get_db())
+    camp = get_campaign_by_id(id)
+    if not camp:
+        return
+    db: Session = next(get_db(camp.org_id))
+    try:
+        results = db.query(Result).filter(Result.campaign_id == id).all()
+        events = db.query(Event).filter(Event.campaign_id == id).all()
+        setattr(camp, 'results', results)
+        setattr(camp, 'timelines', events)
+        return camp
+    except Exception as e:
+        print(e)
+    return
 
 
 def create_campaign(cam_in: CampaignModel):

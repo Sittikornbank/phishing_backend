@@ -24,7 +24,7 @@ class EVENT(str, Enum):
     CREATE = 'create_campaign'
     LAUNCH = 'launch_campaign'
     COMPLETE = 'complete_campaign'
-    FAIL = 'campaign_fail'
+    FAIL = 'fail'
     SEND = 'send_email'
     OPEN = 'open_email'
     CLICK = 'click_link'
@@ -175,3 +175,46 @@ class CampaignSummaryModel(CampaignDisplayModel):
 
 class CampaignSumListModel(BaseListModel):
     campaigns: list[CampaignSummaryModel] = []
+
+
+class ResultModel(BaseModel):
+    r_id: str | None = None
+    email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    status: EVENT | None = None
+    ip: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    position: str | None = None
+    send_date: datetime | None = None
+    open_date: datetime | None = None
+    click_date: datetime | None = None
+    submit_date: datetime | None = None
+    report_date: datetime | None = None
+    modified_date: datetime | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class EventModel(BaseModel):
+    campaign_id: int | None = None
+    email: int | None = None
+    time: datetime | None = None
+    message: str | None = None
+    details: dict | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class CampaignResultModel(BaseModel):
+    id: int | None = None
+    name: str | None = None
+    status: str | None = None
+    results: list[ResultModel] = []
+    timelines: list[EventModel] = []
+
+    class Config:
+        orm_mode = True
