@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSO
 from sqlalchemy import create_engine, Engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+from fastapi import HTTPException
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -164,6 +165,27 @@ def get_groups_by_org(org_id: int, page: int | None = None, size: int | None = N
     return GroupListModel()
 
 
+def get_groups_by_user(user_id: int, page: int | None = None, size: int | None = None):
+    db: Session = next(get_db())
+    if not size or size < 0:
+        size = 25
+    if not page or page < 0:
+        page = 1
+    groups = list()
+    count = 0
+    try:
+        groups = db.query(Group).filter(Group.user_id == user_id).limit(
+            size).offset(size*(page-1)).all()
+        count = db.query(Group).filter(Group.user_id == user_id).count()
+        return GroupListModel(count=count, page=page,
+                              last_page=(count//size)+1,
+                              limit=size,
+                              groups=groups)
+    except Exception as e:
+        print(e)
+    return GroupListModel()
+
+
 def get_sum_group_no_org(page: int | None = None, size: int | None = None):
     return get_sum_groups_by_org(org_id=0, page=page, size=size)
 
@@ -188,6 +210,14 @@ def get_sum_groups_by_org(org_id: int, page: int | None = None, size: int | None
     except Exception as e:
         print(e)
     return GroupSumListModel()
+
+
+def get_sum_groups_by_id(id: int):
+    group = get_group_by_id(id)
+    if group:
+        setattr(group, 'num_targets', len(group.targets))
+        return group
+    return
 
 
 def get_sum_groups_by_user(user_id: int, org_id: int | None, page: int | None = None, size: int | None = None):
@@ -305,8 +335,8 @@ def create_group(group_in: GroupModel, org_id: int | None, user_id: int):
     return
 
 
-def update_group(id: int, group_in: dict, add_targets: list[TargetModel],
-                 remove_targets: list[int], org_id: int | None, max_target: int = 10):
+def update_group(id: int, group_in: dict, add_targets: list[TargetModel] | None,
+                 remove_targets: list[int] | None, org_id: int | None, max_target: int = -1):
     db: Session = next(get_db(org_id))
     try:
         group = db.query(Group).filter(
@@ -328,12 +358,14 @@ def update_group(id: int, group_in: dict, add_targets: list[TargetModel],
             ]
             db.add_all(targets)
             group.targets.extend(targets)
-            if db.query(Target).filter(Target.group_id == group.id).count() > max_target:
-                raise Exception('target more tham maximium')
+            if max_target > 0 and db.query(Target).filter(
+                    Target.group_id == group.id).count() > max_target:
+                raise HTTPException(
+                    status_code=403, detail='Targets more than Max allow')
             group.modified_date = datetime.now()
         if group_in:
             group.modified_date = datetime.now()
-            group.modified_date = group_in['name']
+            group.name = group_in['name']
 
         if group and (remove_targets or add_targets or group_in):
             db.add(group)
@@ -341,6 +373,8 @@ def update_group(id: int, group_in: dict, add_targets: list[TargetModel],
             db.refresh(group)
             return group
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(e)
     return
@@ -463,7 +497,7 @@ def get_all_campaigns_sum(page: int | None = None, size: int | None = None):
     camps = get_all_campaigns(page=page, size=size)
     for camp in camps.campaigns:
         summary = get_campaign_summary(camp.id, org_id=camp.org_id)
-        setattr(camp, 'status', summary)
+        setattr(camp, 'stats', summary)
     return camps
 
 
@@ -471,14 +505,16 @@ def get_campaign_sum_by_id(id: int):
     camp = get_campaign_by_id(id)
     if not camp:
         return
-    return get_campaign_summary(id, camp.org_id)
+    summary = get_campaign_summary(id, camp.org_id)
+    setattr(camp, 'stats', summary)
+    return camp
 
 
 def get_campaigns_sum_by_user(user_id: int, page: int | None = None, size: int | None = None):
     camps = get_campaigns_by_user(user_id=user_id, page=page, size=size)
     for camp in camps.campaigns:
         summary = get_campaign_summary(camp.id, org_id=camp.org_id)
-        setattr(camp, 'status', summary)
+        setattr(camp, 'stats', summary)
     return camps
 
 
@@ -486,7 +522,7 @@ def get_campaigns_sum_by_org(org_id: int, page: int | None = None, size: int | N
     camps = get_campaigns_by_user(org_id=org_id, page=page, size=size)
     for camp in camps.campaigns:
         summary = get_campaign_summary(camp.id, org_id=camp.org_id)
-        setattr(camp, 'status', summary)
+        setattr(camp, 'stats', summary)
     return camps
 
 

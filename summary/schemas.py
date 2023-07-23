@@ -56,14 +56,15 @@ class GroupModel(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     modified_date: datetime | None = datetime.now()
     user_id: int = Field(gt=0)
+    org_id: int = Field(gt=0)
     targets: list[TargetModel] = []
 
 
 class GroupDisplayModel(BaseModel):
     id: int | None
     name: str = ''
-    user_id: int | None = None
     modified_date: datetime | None = None
+    user_id: int | None = None
     targets: list[TargetModel] = []
 
     class Config:
@@ -131,6 +132,7 @@ class CampaignFormModel(CampaignModel):
     name: str | None = None
     templates_id: int | None = None
     smtp_id: int | None = None
+    group_id: int | None = None
     launch_date: datetime | None = None
     send_by_date: datetime | None = None
 
@@ -170,7 +172,7 @@ class Summary(BaseModel):
 
 
 class CampaignSummaryModel(CampaignDisplayModel):
-    status: Summary | None
+    stats: Summary | None
 
 
 class CampaignSumListModel(BaseListModel):
