@@ -76,6 +76,10 @@ def calculate_duration(start: datetime, stop: datetime):
         return 0
     return differ
 
+# @app.post('/event/email')
+# @app.post('/event/site')
+# @app.post('/complete')
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

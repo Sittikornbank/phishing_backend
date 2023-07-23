@@ -528,5 +528,7 @@ def delete_image(name: str):
         os.remove(image_path)
 
 
+# app.post('/validate')
+
 if __name__ == "__main__":
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

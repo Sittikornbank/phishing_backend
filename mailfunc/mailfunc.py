@@ -342,6 +342,11 @@ async def create_and_start_task(task: TaskModel, _=Depends(protect_api)):
     res = await tasks.create_and_start_task(task, smtp)
     return {'success': res}
 
+
+# app.delete('/mailing')
+
+# app.post('/validate')
+
 if __name__ == "__main__":
     # Check if SMTP configuration with user_id=1 already exists
     existing_smtp = models.get_smtp_id(1)
