@@ -68,7 +68,7 @@ async def get_template(temp_id: int, auth: AuthContext = Depends(auth_token)):
 @app.post('/templates', response_model=schemas.TemplateModel)
 async def add_template(temp_in: schemas.TemplateModel,
                        auth: AuthContext = Depends(auth_token)):
-    auth_permission(auth=auth, roles=(Role.SUPER))
+    auth_permission(auth=auth, roles=(Role.SUPER,))
     temp_in.create_at = datetime.now()
     temp = models.create_template(temp_in)
     if temp:
