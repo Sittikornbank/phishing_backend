@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 import os
 from schemas import (GroupModel, CampaignListModel, CampaignModel,
                      GroupListModel, GroupSumListModel, TargetModel,
-                     EVENT, Summary, Status)
+                     EVENT, Summary, Status, EventModel, CampaignSummaryModel,
+                     CampaignSumListModel)
 
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URI')
@@ -90,7 +91,7 @@ class Campaign(Base):
         "group_indexs.group_id", ondelete="SET NULL"))
     status = Column(String(32))
     smtp_id = Column(Integer)
-    launch_date = Column(DateTime(), default=datetime.now())
+    launch_date = Column(DateTime(), default=None)
     send_by_date = Column(DateTime(), default=None)
 
 
@@ -302,18 +303,18 @@ def delete_group_index(id: int):
     return
 
 
-def create_group(group_in: GroupModel, org_id: int | None, user_id: int):
-    group_index = create_group_index(org_id)
+def create_group(group_in: GroupModel):
+    group_index = create_group_index(group_in.org_id)
     if not group_index:
         return
-    db: Session = next(get_db(org_id))
+    db: Session = next(get_db(group_in.org_id))
     try:
         group = Group(
             id=group_index.group_id,
             name=group_in.name,
             modified_date=group_in.modified_date,
             user_id=group_in.user_id,
-            org_id=org_id)
+            org_id=group_in.org_id)
         targets = [
             Target(
                 firstname=t.firstname,
@@ -321,7 +322,7 @@ def create_group(group_in: GroupModel, org_id: int | None, user_id: int):
                 email=t.email,
                 position=t.position,
                 department=t.department,
-                phonenumber=t.phonenumber
+                phonenumber=t.phonenumber,
             )
             for t in group_in.targets
         ]
@@ -468,12 +469,18 @@ def count_campaign_by_user(user_id: int):
     return 0
 
 
-def get_campaign_summary(campaign_id: int, org_id: int | None):
+def get_campaign_summary(campaign_id: int, org_id: int | None, group_id: int | None):
+    summary = Summary()
+    if group_id:
+        g = get_sum_groups_by_id(group_id)
+        if g:
+            summary.total = g.num_targets
+
     db: Session = next(get_db(org_id))
     try:
         results = db.query(Event.message, func.count()).filter(Event.campaign_id ==
                                                                campaign_id).group_by(Event.message).all()
-        summary = Summary()
+
         for result in results:
             if result._data[0] == EVENT.SEND:
                 summary.sent = result._data[1]
@@ -494,26 +501,40 @@ def get_campaign_summary(campaign_id: int, org_id: int | None):
 
 
 def get_all_campaigns_sum(page: int | None = None, size: int | None = None):
-    camps = get_all_campaigns(page=page, size=size)
-    for camp in camps.campaigns:
-        summary = get_campaign_summary(camp.id, org_id=camp.org_id)
-        setattr(camp, 'stats', summary)
-    return camps
+    camp_list = get_all_campaigns(page=page, size=size)
+    campaigns = [
+        CampaignSummaryModel(id=c.id,
+                             name=c.name,
+                             create_date=c.create_date,
+                             status=c.status,
+                             stats=get_campaign_summary(c.id, org_id=c.org_id, group_id=c.group_id))
+
+        for c in camp_list.campaigns
+    ]
+    camp_list = CampaignSumListModel(count=camp_list.count,
+                                     page=camp_list.page,
+                                     last_page=camp_list.last_page,
+                                     campaigns=campaigns)
+    return camp_list
 
 
 def get_campaign_sum_by_id(id: int):
-    camp = get_campaign_by_id(id)
-    if not camp:
+    c = get_campaign_by_id(id)
+    if not c:
         return
-    summary = get_campaign_summary(id, camp.org_id)
-    setattr(camp, 'stats', summary)
+    camp = CampaignSummaryModel(id=c.id,
+                                name=c.name,
+                                created_date=c.created_date,
+                                status=c.status,
+                                stats=get_campaign_summary(c.id, org_id=c.org_id, group_id=c.group_id))
     return camp
 
 
 def get_campaigns_sum_by_user(user_id: int, page: int | None = None, size: int | None = None):
     camps = get_campaigns_by_user(user_id=user_id, page=page, size=size)
     for camp in camps.campaigns:
-        summary = get_campaign_summary(camp.id, org_id=camp.org_id)
+        summary = get_campaign_summary(
+            camp.id, org_id=camp.org_id, group_id=camp.group_id)
         setattr(camp, 'stats', summary)
     return camps
 
@@ -521,7 +542,8 @@ def get_campaigns_sum_by_user(user_id: int, page: int | None = None, size: int |
 def get_campaigns_sum_by_org(org_id: int, page: int | None = None, size: int | None = None):
     camps = get_campaigns_by_user(org_id=org_id, page=page, size=size)
     for camp in camps.campaigns:
-        summary = get_campaign_summary(camp.id, org_id=camp.org_id)
+        summary = get_campaign_summary(
+            camp.id, org_id=camp.org_id, group_id=camp.group_id)
         setattr(camp, 'stats', summary)
     return camps
 
@@ -583,6 +605,30 @@ def delete_campaign(id: int):
     try:
         c = db.query(Campaign).filter(Campaign.id == id).delete()
         return c > 0
+    except Exception as e:
+        print(e)
+    return
+
+
+def add_event(event: EventModel):
+    camp = get_campaign_by_id(event.campaign_id)
+    if not camp:
+        return
+    if camp.completed_date != None:
+        return
+    db: Session = next(get_db(camp.org_id))
+    try:
+        event = Event(
+            campaign_id=event.campaign_id,
+            email=event.email,
+            time=event.time,
+            message=event.message,
+            details=event.details
+        )
+        db.add(event)
+        db.commit()
+        db.refresh(event)
+        return event
     except Exception as e:
         print(e)
     return

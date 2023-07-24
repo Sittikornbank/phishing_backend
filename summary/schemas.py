@@ -35,7 +35,7 @@ class EVENT(str, Enum):
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
-    organization: int = 0
+    organization: int | None = None
 
 
 class TargetModel(BaseModel):
@@ -55,8 +55,8 @@ class GroupModel(BaseModel):
     id: int | None
     name: str = Field(min_length=1, max_length=128)
     modified_date: datetime | None = datetime.now()
-    user_id: int = Field(gt=0)
-    org_id: int = Field(gt=0)
+    user_id: int | None = Field(gt=0)
+    org_id: int | None = Field(gt=0)
     targets: list[TargetModel] = []
 
 
@@ -64,7 +64,6 @@ class GroupDisplayModel(BaseModel):
     id: int | None
     name: str = ''
     modified_date: datetime | None = None
-    user_id: int | None = None
     targets: list[TargetModel] = []
 
     class Config:
@@ -122,7 +121,7 @@ class CampaignModel(BaseModel):
     status: Status = Status.IDLE
     smtp_id: int
     group_id: int
-    launch_date: datetime = datetime.now()
+    launch_date: datetime | None = None
     send_by_date: datetime | None = None
 
 
@@ -146,6 +145,7 @@ class CampaignDisplayModel(BaseModel):
     templates_id: int | None = None
     status: str | None = None
     smtp_id: int | None = None
+    group_id: int | None = None
     complate: datetime | None = None
     launch_date: datetime | None = None
     send_by_date: datetime | None = None
@@ -171,8 +171,12 @@ class Summary(BaseModel):
         orm_mode = True
 
 
-class CampaignSummaryModel(CampaignDisplayModel):
-    stats: Summary | None
+class CampaignSummaryModel(BaseModel):
+    id: int | None = None
+    name: str | None = None
+    create_date: datetime | None = None
+    status: str | None = None
+    stats: Summary | None = None
 
 
 class CampaignSumListModel(BaseListModel):
@@ -220,3 +224,12 @@ class CampaignResultModel(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class EventModel(BaseModel):
+    campaign_id: int
+    target_id: int | None
+    email: str | None
+    time: datetime
+    message: EVENT
+    details: dict | None

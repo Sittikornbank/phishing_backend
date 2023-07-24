@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import schemas
 import models
+import tasks
 import uvicorn
 import os
 
@@ -115,6 +116,10 @@ async def get_group(id: int, auth: AuthContext = Depends(auth_token)):
 async def create_group(group: schemas.GroupModel, auth: AuthContext = Depends(auth_token)):
     group.modified_date = datetime.now()
     if auth.role == Role.SUPER:
+        if not group.user_id:
+            group.user_id = auth.id
+        if not group.org_id:
+            group.org_id = auth.organization
         group = models.create_group(group)
         if group:
             return group
@@ -147,6 +152,8 @@ async def create_group(group: schemas.GroupModel, auth: AuthContext = Depends(au
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="targets can only be 10 per group")
+    group.user_id = auth.id
+    group.org_id = auth.organization
     group = models.create_group(group)
     if group:
         return group
@@ -234,6 +241,15 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 25, auth: Auth
     return models.get_campaigns_by_user(id=auth.id, page=page, size=limit)
 
 
+@app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
+def get_campaigns_sum(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+    if auth.role == Role.SUPER:
+        return models.get_all_campaigns_sum(page=page, size=limit)
+    elif auth.role in (Role.AUDITOR, Role.ADMIN):
+        return models.get_campaigns_sum_by_org(auth.organization, page=page, size=limit)
+    return models.get_campaigns_sum_by_user(auth.id)
+
+
 @app.get("/campaigns/{id}", response_model=schemas.CampaignDisplayModel)
 async def get_campaign(id: int, auth: AuthContext = Depends(auth_token)):
     campaign = models.get_campaign_by_id(id)
@@ -261,6 +277,10 @@ async def get_campaign(id: int, auth: AuthContext = Depends(auth_token)):
 async def create_campaign(campaign: schemas.CampaignModel, auth: AuthContext = Depends(auth_token)):
     campaign.create_date = datetime.now()
     if auth.role == Role.SUPER:
+        if not campaign.user_id:
+            campaign.user_id = auth.id
+        if not campaign.org_id:
+            campaign.org_id = auth.organization
         campaign = models.create_campaign(campaign)
         if campaign:
             return campaign
@@ -285,21 +305,14 @@ async def create_campaign(campaign: schemas.CampaignModel, auth: AuthContext = D
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="already at maximum number of Campaign")
+    campaign.user_id = auth.id
+    campaign.org_id = auth.organization
     campaign = models.create_campaign(campaign)
     if campaign:
         return campaign
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="invalid campaign format")
-
-
-@app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
-def get_campaigns_sum(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
-    if auth.role == Role.SUPER:
-        return models.get_all_campaigns_sum(page=page, size=limit)
-    elif auth.role in (Role.AUDITOR, Role.ADMIN):
-        return models.get_campaigns_sum_by_org(auth.organization, page=page, size=limit)
-    return models.get_campaigns_sum_by_user(auth.id)
 
 
 @app.put("/campaigns/{id}", response_model=schemas.CampaignDisplayModel)
@@ -420,13 +433,83 @@ def get_campaign_sum(id: int, auth: AuthContext = Depends(auth_token)):
         detail="Campaign :{id} not found")
 
 
-# @app.post("/campaigns/{id}/complete")
+@app.post("/campaigns/{id}/complete")
+async def commplete_campaign(id: int, auth: AuthContext = Depends(auth_token)):
+    camp = models.get_campaign_by_id(id)
+    if not camp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign :{id} not found")
+    if camp.status != schemas.Status.RUNING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Campaign is alredy completed")
+    if auth.role == Role.SUPER:
+        await tasks.stop_campaign_tasks(campaign=camp)
+        models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+                                           'status': schemas.Status.COMPLETE})
+        return {'success': True}
+    if auth.role == Role.ADMIN:
+        if camp.org_id != auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campaign :{id} not found")
+    elif auth.role in (Role.PAID, Role.GUEST):
+        if camp.user_id != auth.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campaign :{id} not found")
+    await tasks.stop_campaign_tasks(campaign=camp)
+    models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+                                       'status': schemas.Status.COMPLETE})
+    return {'success': True}
 
-# @app.post("/campaigns/{id}/launch")
+
+@app.post("/campaigns/{id}/launch")
+async def launch(id: int, auth: AuthContext = Depends(auth_token)):
+    camp = models.get_campaign_by_id(id)
+    if not camp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign :{id} not found")
+    if camp.status != schemas.Status.IDLE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Campaign is alredy running")
+    groups = models.get_group_by_id(camp.group_id)
+
+    if not groups or groups.org_id != camp.org_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Campaign has missinng data")
+    if not groups.targets:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Campaign has no targets")
+    if auth.role == Role.SUPER:
+        await tasks.lanuch_campaign(camp, groups.targets, auth)
+        models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+                                           'status': schemas.Status.RUNING})
+        return {'success': True}
+    if auth.role == Role.ADMIN:
+        if camp.org_id != auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campaign :{id} not found")
+    elif auth.role in (Role.PAID, Role.GUEST):
+        if camp.user_id != auth.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campaign :{id} not found")
+    await tasks.lanuch_campaign(camp, groups.targets, auth)
+    models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+                                       'status': schemas.Status.RUNING})
+    return {'success': True}
 
 # @app.post("/event")
 
 # @app.put("/org")
+
 
 if __name__ == "__main__":
     models.init_org_db()
