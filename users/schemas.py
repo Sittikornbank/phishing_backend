@@ -56,7 +56,7 @@ class UserFormModel(UserCreateModel):
 class UserDbModel(UserCreateModel):
     id: int | None
     role: Role = Role.GUEST
-    organization: str = "None"
+    organization: int | None = None
     last_login: datetime | None
     create_at: datetime = datetime.now()
     is_active: bool = True

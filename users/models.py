@@ -28,7 +28,7 @@ class User(Base):
     lastname = Column(String(64), nullable=False)
     phonenumber = Column(String(64))
     role = Column(String(64), default='guest', nullable=False)
-    organization = Column(String(256))
+    organization = Column(Integer)
     last_login = Column(DateTime())
     create_at = Column(DateTime(), default=datetime.now())
     is_active = Column(Boolean, default=False)

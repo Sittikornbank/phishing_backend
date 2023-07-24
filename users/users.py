@@ -444,6 +444,6 @@ if __name__ == "__main__":
                             phonenumber='0839145961',
                             password='123456789',
                             role=Role.SUPER,
-                            organization='None',
+                            organization=None,
                             is_active=True))
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))
