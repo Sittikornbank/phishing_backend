@@ -1,7 +1,7 @@
 import base64
 import uvicorn
 from datetime import datetime
-from fastapi import Request, FastAPI, status, HTTPException, Depends
+from fastapi import Request, FastAPI, status, HTTPException, Depends, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -470,7 +470,7 @@ def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
 
 
 @app.delete('/landing')
-def remove_landing_campaign(ref_key: str, auth: AuthContext, _=Depends(protect_api)):
+def remove_landing_campaign(auth: AuthContext, ref_key: str = Body(), _=Depends(protect_api)):
     task = workers.get_task_by_ref(ref_key)
     if not task:
         raise HTTPException(
