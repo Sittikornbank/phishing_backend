@@ -33,10 +33,9 @@ class CampaignSchema(BaseModel):
     complate: datetime | None
     templates_id: int | None = None
     status: Status = Status.IDLE
-    url: str = ""
     smtp_id: int | None = None
     launch_date: datetime = datetime.now()
-    send_by_date: datetime = datetime.now()
+    send_by_date: datetime | None = datetime.now()
 
 
 class EmailSchema(BaseModel):

@@ -67,10 +67,15 @@ async def launch(model: schemas.LaunchModel, _=Depends(get_token)):
         await stop_template(ref_key=c.ref, auth=model.auth)
         raise e
     await stop_template(ref_key=c.ref, auth=model.auth)
-    return {'success': False}
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail='Fail to Launch Campaign'
+    )
 
 
-def calculate_duration(start: datetime, stop: datetime):
+def calculate_duration(start: datetime | None, stop: datetime | None):
+    if not stop or not start:
+        return 0
     differ = int(stop.timestamp()) - int(start.timestamp())
     if differ < 0:
         return 0
@@ -78,7 +83,11 @@ def calculate_duration(start: datetime, stop: datetime):
 
 # @app.post('/event/email')
 # @app.post('/event/site')
-# @app.post('/complete')
+
+
+@app.post('/complete')
+async def complete(campaign: int, _=Depends(get_token)):
+    pass
 
 
 if __name__ == "__main__":

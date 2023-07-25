@@ -5,6 +5,7 @@ from schemas import (Role, AuthContext, EmailSchema, CampaignManager,
                      CampaignSchema, Target, TemplateReqModel, EmailReqModel)
 from random import choices
 import os
+from string import ascii_letters, digits
 
 load_dotenv()
 TEMPLATES_URI = os.getenv('TEMPLATES_URI')
@@ -15,8 +16,7 @@ running_campaign: dict[str, CampaignManager] = dict()
 
 
 def get_random_ref(check_set: set[str] = set()):
-    s = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZ0123456789'
-    ref = ''.join(choices(s, k=4))
+    ref = ''.join(choices(ascii_letters+digits, k=4))
     if not check_set:
         while ref in running_campaign:
             ref = ''.join(choices(s, k=4))
@@ -40,6 +40,10 @@ def process_before_launch(campaign: CampaignSchema, auth: AuthContext, targets: 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Cannont access the Campaign")
+    if len(targets) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Campaign has no targets")
     ref = get_random_ref()
     c = CampaignManager(id=campaign.id,
                         ref=ref,
@@ -91,10 +95,11 @@ async def stop_template(ref_key: str, auth: AuthContext):
             header = {'Authorization': f'Bearer {API_KEY}'}
             json = auth.dict()
             json.update({'ref_key': ref_key})
-            res = await client.delete(TEMPLATES_URI, json=json, headers=header)
+            res = await client.request(method='DELETE', url=TEMPLATES_URI, json=json, headers=header)
 
         except Exception as e:
             print(e)
+            print(res.json())
     return False
 
 
@@ -125,3 +130,16 @@ async def launch_email(req: EmailReqModel, auth: AuthContext):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="INTERNAL SERVER ERROR, Cannot start sending Email")
+
+
+async def stop_email(ref_key: str, auth: AuthContext):
+    async with AsyncClient() as client:
+        try:
+            header = {'Authorization': f'Bearer {API_KEY}'}
+            json = auth.dict()
+            json.update({'ref_key': ref_key})
+            res = await client.request(method='DELETE', url=MAILFUNC_URI, json=json, headers=header)
+            print(res.json())
+        except Exception as e:
+            print(e)
+    return False
