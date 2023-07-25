@@ -16,7 +16,8 @@ running_campaign: dict[str, CampaignManager] = dict()
 
 
 def get_random_ref(check_set: set[str] = set()):
-    ref = ''.join(choices(ascii_letters+digits, k=4))
+    s = ascii_letters+digits
+    ref = ''.join(choices(s, k=4))
     if not check_set:
         while ref in running_campaign:
             ref = ''.join(choices(s, k=4))
@@ -93,13 +94,12 @@ async def stop_template(ref_key: str, auth: AuthContext):
     async with AsyncClient() as client:
         try:
             header = {'Authorization': f'Bearer {API_KEY}'}
-            json = auth.dict()
-            json.update({'ref_key': ref_key})
+            json = ({'ref_key': ref_key})
+            json.update({'auth': auth.dict()})
             res = await client.request(method='DELETE', url=TEMPLATES_URI, json=json, headers=header)
-
+            return res.json()['success']
         except Exception as e:
             print(e)
-            print(res.json())
     return False
 
 
@@ -139,7 +139,7 @@ async def stop_email(ref_key: str, auth: AuthContext):
             json = auth.dict()
             json.update({'ref_key': ref_key})
             res = await client.request(method='DELETE', url=MAILFUNC_URI, json=json, headers=header)
-            print(res.json())
+            return res.json()['success']
         except Exception as e:
             print(e)
     return False
