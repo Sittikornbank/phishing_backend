@@ -351,7 +351,7 @@ if __name__ == "__main__":
     # Check if SMTP configuration with user_id=1 already exists
     existing_smtp = models.get_smtp_id(1)
     if not existing_smtp:
-        models.create_smtp(SMTPDisplayModel(
+        models.create_smtp(SMTPModel(
             user_id=None,
             org_id=None,
             interface_type="smtp",
