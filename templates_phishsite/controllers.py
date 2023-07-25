@@ -14,7 +14,7 @@ import schemas
 import models
 import workers
 from random import choices
-
+from string import ascii_letters
 import base64
 
 load_dotenv()
@@ -517,7 +517,7 @@ def validate_and_set_image(temp_in:
             detail="Invalid base64 encoding or format is not 'data:image/png;base64,'"
         )
 
-    iname = ''.join(choices('abcdefghijklmnopqrstuvwxyz', k=8))
+    iname = ''.join(choices(ascii_letters, k=8))
     image_filename = iname + '.png'
     image_path = os.path.join(IMAGES_FOLDER, image_filename)
 
