@@ -233,3 +233,15 @@ class EventModel(BaseModel):
     time: datetime
     message: EVENT
     details: dict | None
+
+
+class CampaignSendModel(BaseModel):
+    id: int | None = None
+    user_id: int | None = None
+    org_id: int | None = None
+    name: str = Field(min_length=1, max_length=128)
+    templates_id: int
+    smtp_id: int
+    group_id: int
+    launch_date: datetime | None = None
+    send_by_date: datetime | None = None

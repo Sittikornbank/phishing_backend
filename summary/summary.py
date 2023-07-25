@@ -488,7 +488,7 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
             detail="Campaign has no targets")
     if auth.role == Role.SUPER:
         await tasks.lanuch_campaign(camp, groups.targets, auth)
-        models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+        models.update_campaign(id, cam_in={'launch_date': datetime.now(),
                                            'status': schemas.Status.RUNING})
         return {'success': True}
     if auth.role == Role.ADMIN:
@@ -502,7 +502,7 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
     await tasks.lanuch_campaign(camp, groups.targets, auth)
-    models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+    models.update_campaign(id, cam_in={'launch_date': datetime.now(),
                                        'status': schemas.Status.RUNING})
     return {'success': True}
 
