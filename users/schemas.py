@@ -20,7 +20,7 @@ class Role(str, Enum):
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
-    organization: int = 0
+    organization: int | None = None
 
 
 class UserLoginModel(BaseModel):

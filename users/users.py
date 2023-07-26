@@ -99,7 +99,7 @@ def register(u: UserCreateModel):
                        phonenumber=u.phonenumber,
                        password=u.password,
                        role=Role.GUEST,
-                       organization='None',
+                       organization=None,
                        create_at=datetime.now(),
                        is_active=False)
     u = create_user(user)
