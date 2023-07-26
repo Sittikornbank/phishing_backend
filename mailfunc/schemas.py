@@ -149,11 +149,12 @@ class IMAPListModel(BaseModel):
 
 class Target(BaseModel):
     ref: str
-    firstname: str
-    lastname: str
-    position: str
-    phonenumber: str
     email: str
+    firstname: str | None = ''
+    lastname: str | None = ''
+    position: str | None = ''
+    department: str | None = ''
+    phonenumber: str | None = ''
 
 
 class TaskModel(BaseModel):

@@ -69,13 +69,13 @@ class SMTPModel(BaseModel):
 
 class Target(BaseModel):
     id: int
-    ref: str = ''
-    firstname: str = ''
-    lastname: str = ''
-    position: str = ''
-    phonenumber: str = ''
-    department: str = ''
+    ref: str | None = None
     email: str
+    firstname: str | None = ""
+    lastname: str | None = ""
+    position: str | None = ""
+    phonenumber: str | None = ""
+    department: str | None = ""
 
 
 class EmailReqModel(BaseModel):

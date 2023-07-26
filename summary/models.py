@@ -114,13 +114,14 @@ class Result(Base):
     user_id = Column(Integer)
     r_id = Column(String(256))
     email = Column(String(256))
-    firstname = Column(String(256))
-    lastname = Column(String(256))
-    status = Column(String(256), nullable=False)
-    ip = Column(String(64))
-    latitude = Column(Float)
-    longitude = Column(Float)
-    position = Column(String(256))
+    firstname = Column(String(256), default='')
+    lastname = Column(String(256), default='')
+    department = Column(String(256), default='')
+    position = Column(String(256), default='')
+    status = Column(String(256), default=EVENT.LAUNCH)
+    ip = Column(String(64), default='')
+    latitude = Column(Float, default=0)
+    longitude = Column(Float, default=0)
     send_date = Column(DateTime, default=None)
     open_date = Column(DateTime, default=None)
     click_date = Column(DateTime, default=None)
@@ -632,3 +633,28 @@ def add_event(event: EventModel):
     except Exception as e:
         print(e)
     return
+
+
+def add_results(data: dict, camp: Campaign):
+    if not ('ref_key' in data) or not ('targets' in data):
+        return False
+    db: Session = next(get_db(camp.org_id))
+    try:
+        targets = [
+            Result(
+                campaign_id=camp.id,
+                user_id=camp.user_id,
+                r_id=data['ref_key']+t['ref'],
+                email=t['email'],
+                firstname=t['firstname'],
+                lastname=t['lastname'],
+                department=t['department'],
+                position=t['position']
+            ) for t in data['targets']
+        ]
+        db.add_all(targets)
+        db.commit()
+        return True
+    except Exception as e:
+        print(e)
+    return False

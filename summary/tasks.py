@@ -41,8 +41,7 @@ async def lanuch_campaign(campaign: Campaign, targets: list[Target], auth: AuthC
             res = await client.post(PHISHING_URI+'/launch', json=json, headers=header)
             data = res.json()
             if res.status_code == 200:
-                print(data)
-                return True
+                return data
             elif 'detail' in data:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

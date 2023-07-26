@@ -97,7 +97,7 @@ def render_template(template: str, target: Target, ref_key: str, base_url: str):
     tracking = base_url + "/image/dot.png" + ref
     base_url = base_url + ref
     temp = environment.from_string(template)
-    data = target.dict()
+    data = target.dict(exclude_none=True, exclude_unset=True)
     data.update({'tracking': tracking, 'base_url': base_url})
     return temp.render(data)
 

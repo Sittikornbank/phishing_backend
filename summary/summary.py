@@ -376,20 +376,20 @@ def get_campaign_result(id: int, auth: AuthContext = Depends(auth_token)):
     if not camp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Campaign :{id} not found")
+            detail=f"Campaign :{id} not found")
     if auth.role == Role.SUPER:
         camp = models.get_campaign_result_by_id(id)
         if not camp:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Campaign :{id} not found")
+                detail=f"Campaign :{id} not found")
         return camp
 
     if auth.role in (Role.ADMIN, Role.AUDITOR):
         if camp.org_id != auth.organization:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Campaign :{id} not found")
+                detail=f"Campaign :{id} not found")
         camp = models.get_campaign_result_by_id(id)
         if camp:
             return camp
@@ -397,13 +397,13 @@ def get_campaign_result(id: int, auth: AuthContext = Depends(auth_token)):
         if camp.user_id != auth.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Campaign :{id} not found")
+                detail=f"Campaign :{id} not found")
         camp = models.get_campaign_result_by_id(id)
         if camp:
             return camp
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="Campaign :{id} not found")
+        detail=f"Campaign :{id} not found")
 
 
 @app.get("/campaigns/{id}/summary", response_model=schemas.CampaignSummaryModel)
@@ -489,7 +489,8 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Campaign has no targets")
     if auth.role == Role.SUPER:
-        await tasks.lanuch_campaign(camp, groups.targets, auth)
+        result = await tasks.lanuch_campaign(camp, groups.targets, auth)
+        models.add_results(data=result, camp=camp)
         models.update_campaign(id, cam_in={'launch_date': datetime.now(),
                                            'status': schemas.Status.RUNING})
         return {'success': True}
