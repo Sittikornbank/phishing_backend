@@ -1,6 +1,5 @@
 import uvicorn
-from fastapi import Request, FastAPI
-from fastapi import Request, FastAPI, status, HTTPException, Depends
+from fastapi import Request, FastAPI, status, HTTPException, Depends, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -319,9 +318,14 @@ async def delete_imap_config(id: int, auth: AuthContext = Depends(auth_token)):
         detail="IMAP not found")
 
 
+@app.get("/mailing")
+def get_mailing(auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth=auth, roles=(Role.SUPER,))
+    return tasks.get_running_task()
+
+
 @app.post("/mailing")
 async def create_and_start_task(task: TaskModel, _=Depends(protect_api)):
-    print(task.smtp_id)
     smtp = models.get_smtp_id(task.smtp_id)
     if not smtp:
         raise HTTPException(
@@ -339,13 +343,42 @@ async def create_and_start_task(task: TaskModel, _=Depends(protect_api)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Cannot Access SMTP")
+    if tasks.get_task_by_ref(task_id=task.task_id):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Mailing Task Already Running")
     res = await tasks.create_and_start_task(task, smtp)
     return {'success': res}
 
 
-# app.delete('/mailing')
+@app.delete('/mailing')
+def remove_mailing_task(auth: AuthContext, ref_key: str = Body(), _=Depends(protect_api)):
+    task = tasks.get_task_by_ref(ref_key)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found"
+        )
+    if auth.role == Role.AUDITOR:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access Mailing"
+        )
+    if auth.role in [Role.PAID, Role.GUEST] and auth.id != task["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cannot Access Mailing"
+        )
+    if auth.role == Role.ADMIN and auth.organization != task['org_id']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot Access Mailing"
+        )
+    tasks.stop_running_task(task_id=ref_key)
+    return {'success': True}
 
 # app.post('/validate')
+
 
 if __name__ == "__main__":
     # Check if SMTP configuration with user_id=1 already exists

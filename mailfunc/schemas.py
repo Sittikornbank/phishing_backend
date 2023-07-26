@@ -16,6 +16,7 @@ class Status(str, Enum):
     RUNNING = 'running'
     COMPLETE = 'complete'
     FAIL = 'fail'
+    STOP = 'stop'
 
 
 class AuthContext(BaseModel):
@@ -164,7 +165,18 @@ class TaskModel(BaseModel):
     attachments: list[str] = []
     status: Status = Status.IDLE
     sent: int = 0
+    fail: int = 0
     duration: int = Field(ge=0)
     targets: list[Target] = []
     auth: AuthContext
     base_url: str
+
+
+class TaskStatModel(BaseModel):
+    ref_key: str
+    status: Status = Status.IDLE
+    total: int = 0
+    sent: int = 0
+    fail: int = 0
+    user_id: int | None = None
+    org_id: int | None = None
