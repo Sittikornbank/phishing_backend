@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import AuthContext, get_token, protect_api
 import schemas
 from controllers import (launch_template, process_before_launch,
-                         launch_email, stop_template)
+                         launch_email, stop_template, stop_campaign)
 import os
 
 load_dotenv()
@@ -39,7 +39,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.post('/launch')
-async def launch(model: schemas.LaunchModel, _=Depends(get_token)):
+async def launch(model: schemas.LaunchModel, _=Depends(protect_api)):
     c = process_before_launch(
         model.campaign, targets=model.targets, auth=model.auth)
     reqt = schemas.TemplateReqModel(ref_key=c.ref,
@@ -62,7 +62,7 @@ async def launch(model: schemas.LaunchModel, _=Depends(get_token)):
     try:
         res = await launch_email(req=reqm, auth=model.auth)
         if res:
-            return {'success': True}
+            return {'ref_key': c.ref, 'targets': c.targets}
     except HTTPException as e:
         await stop_template(ref_key=c.ref, auth=model.auth)
         raise e
@@ -86,8 +86,9 @@ def calculate_duration(start: datetime | None, stop: datetime | None):
 
 
 @app.post('/complete')
-async def complete(campaign: int, _=Depends(get_token)):
-    pass
+async def complete(camp: schemas.CompleteSchema, _=Depends(protect_api)):
+    res = await stop_campaign(campaign_id=camp.campaign_id, auth=camp.auth)
+    return {'success': res}
 
 
 if __name__ == "__main__":

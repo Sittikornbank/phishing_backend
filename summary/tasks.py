@@ -12,19 +12,15 @@ PHISHING_URI = os.getenv('PHISHING_URI')
 API_KEY = os.getenv('API_KEY')
 
 
-async def stop_campaign_tasks(campaign: Campaign):
-    update_stats(EventModel(
+async def stop_campaign_tasks(campaign: Campaign, auth: AuthContext):
+    await complete_campaign(campaign, auth)
+    add_event(EventModel(
         campaign_id=campaign.id,
-        target_id=None,
         email=None,
-        time=datetime.now(),
+        time=campaign.completed_date,
         message=EVENT.COMPLETE,
         details=None
     ))
-
-
-def update_stats(event: EventModel):
-    add_event(event)
 
 
 async def lanuch_campaign(campaign: Campaign, targets: list[Target], auth: AuthContext):
@@ -44,7 +40,8 @@ async def lanuch_campaign(campaign: Campaign, targets: list[Target], auth: AuthC
         try:
             res = await client.post(PHISHING_URI+'/launch', json=json, headers=header)
             data = res.json()
-            if res.status_code == 200 and data['success']:
+            if res.status_code == 200:
+                print(data)
                 return True
             elif 'detail' in data:
                 raise HTTPException(
@@ -62,9 +59,10 @@ async def lanuch_campaign(campaign: Campaign, targets: list[Target], auth: AuthC
                 detail="INTERNAL SERVER ERROR")
 
 
-async def complete_campaign(campaign: Campaign):
+async def complete_campaign(campaign: Campaign, auth: AuthContext):
     async with AsyncClient() as client:
-        json = {'campaign': campaign.id}
+        json = {'campaign_id': campaign.id}
+        json.update({'auth': auth.dict()})
         header = {'Authorization': f'Bearer {API_KEY}'}
         try:
             res = await client.post(PHISHING_URI+'/complete', json=json, headers=header)

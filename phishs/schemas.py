@@ -18,6 +18,15 @@ class Status(str, Enum):
     FAIL = 'fail'
 
 
+class EventType(str, Enum):
+    FAIL = 'fail'
+    SEND = 'send_email'
+    OPEN = 'open_email'
+    CLICK = 'click_link'
+    SUBMIT = 'submit_data'
+    REPORT = 'report'
+
+
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
@@ -25,7 +34,7 @@ class AuthContext(BaseModel):
 
 
 class CampaignSchema(BaseModel):
-    id: int | None = None
+    id: int
     user_id: int = 0
     org_id: int = 0
     name: str = ""
@@ -65,6 +74,7 @@ class Target(BaseModel):
     lastname: str = ''
     position: str = ''
     phonenumber: str = ''
+    department: str = ''
     email: str
 
 
@@ -110,11 +120,31 @@ class LaunchModel(BaseModel):
 
 
 class CampaignManager(BaseModel):
-    id: int | None
+    id: int
     ref: str
     start_date: datetime | None
     end_date: datetime | None
     email_template: EmailSchema | None = None
     smtp: SMTPModel | None = None
     targets: list[Target] = []
-    target_index: int = 0
+    target_index_set: dict[str, set[EventType]]
+
+
+class CompleteSchema(BaseModel):
+    campaign_id: int
+    auth: AuthContext
+
+
+class EventInModel(BaseModel):
+    call_from: str
+    ref_key: str
+    ref_id: str
+    event_type: EventType
+    details: dict | None = None
+
+
+class EventOutModel(BaseModel):
+    campaign_id: int
+    r_id: str
+    event: EventType
+    details: dict | None = None

@@ -186,8 +186,8 @@ class CampaignSumListModel(BaseListModel):
 class ResultModel(BaseModel):
     r_id: str | None = None
     email: str | None = None
-    first_name: str | None = None
-    last_name: str | None = None
+    firstname: str | None = None
+    lastname: str | None = None
     status: EVENT | None = None
     ip: str | None = None
     latitude: float | None = None
@@ -205,7 +205,7 @@ class ResultModel(BaseModel):
 
 
 class EventModel(BaseModel):
-    campaign_id: int | None = None
+    campaign_id: int
     email: int | None = None
     time: datetime | None = None
     message: str | None = None
@@ -224,15 +224,6 @@ class CampaignResultModel(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-class EventModel(BaseModel):
-    campaign_id: int
-    target_id: int | None
-    email: str | None
-    time: datetime
-    message: EVENT
-    details: dict | None
 
 
 class CampaignSendModel(BaseModel):

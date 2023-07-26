@@ -445,8 +445,9 @@ async def commplete_campaign(id: int, auth: AuthContext = Depends(auth_token)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Campaign is alredy completed")
     if auth.role == Role.SUPER:
-        await tasks.stop_campaign_tasks(campaign=camp)
-        models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+        camp.completed_date = datetime.now()
+        await tasks.stop_campaign_tasks(campaign=camp, auth=auth)
+        models.update_campaign(id, cam_in={'completed_date': camp.completed_date,
                                            'status': schemas.Status.COMPLETE})
         return {'success': True}
     if auth.role == Role.ADMIN:
@@ -459,8 +460,9 @@ async def commplete_campaign(id: int, auth: AuthContext = Depends(auth_token)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
-    await tasks.stop_campaign_tasks(campaign=camp)
-    models.update_campaign(id, cam_in={'completed_date': datetime.now(),
+    camp.completed_date = datetime.now()
+    await tasks.stop_campaign_tasks(campaign=camp, auth=auth)
+    models.update_campaign(id, cam_in={'completed_date': camp.completed_date,
                                        'status': schemas.Status.COMPLETE})
     return {'success': True}
 
@@ -506,9 +508,15 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
                                        'status': schemas.Status.RUNING})
     return {'success': True}
 
-# @app.post("/event")
 
-# @app.put("/org")
+@app.post("/event")
+def event_callback():
+    pass
+
+
+@app.put("/org")
+def update_org():
+    pass
 
 
 if __name__ == "__main__":

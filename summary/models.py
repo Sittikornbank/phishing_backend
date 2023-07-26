@@ -114,8 +114,8 @@ class Result(Base):
     user_id = Column(Integer)
     r_id = Column(String(256))
     email = Column(String(256))
-    first_name = Column(String(256))
-    last_name = Column(String(256))
+    firstname = Column(String(256))
+    lastname = Column(String(256))
     status = Column(String(256), nullable=False)
     ip = Column(String(64))
     latitude = Column(Float)
@@ -614,7 +614,7 @@ def add_event(event: EventModel):
     camp = get_campaign_by_id(event.campaign_id)
     if not camp:
         return
-    if camp.completed_date != None:
+    if camp.status == Status.COMPLETE:
         return
     db: Session = next(get_db(camp.org_id))
     try:
