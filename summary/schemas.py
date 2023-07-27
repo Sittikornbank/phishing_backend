@@ -207,7 +207,7 @@ class ResultModel(BaseModel):
 class EventModel(BaseModel):
     campaign_id: int
     r_id: str | None = None
-    email: int | None = None
+    email: str | None = None
     time: datetime | None = None
     message: EVENT | None = None
     details: dict | None = None

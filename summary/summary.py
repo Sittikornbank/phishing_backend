@@ -512,14 +512,19 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
 
 @app.post("/event")
 def event_callback(event: schemas.EventModel, _=Depends(protect_api)):
+    print(event.dict())
     camp = models.get_campaign_by_id(event.campaign_id)
     if not camp or camp.status == schemas.Status.COMPLETE or event.email == None or event.r_id == None:
-        return False
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaign not found")
     event.time = datetime.now()
     if models.update_result(org_id=camp.org_id, event=event):
         models.add_event(event=event)
-        return True
-    return False
+        return {'success': True}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Target's result not found")
 
 
 @app.put("/org")

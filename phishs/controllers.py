@@ -2,7 +2,8 @@ from httpx import AsyncClient
 from fastapi import Request, HTTPException, status
 from dotenv import load_dotenv
 from schemas import (Role, AuthContext, EmailSchema, CampaignManager,
-                     CampaignSchema, Target, TemplateReqModel, EmailReqModel)
+                     CampaignSchema, Target, TemplateReqModel, EmailReqModel,
+                     EventContext, EventType, EventOutModel)
 from random import choices
 import os
 from string import ascii_letters, digits
@@ -10,6 +11,7 @@ from string import ascii_letters, digits
 load_dotenv()
 TEMPLATES_URI = os.getenv('TEMPLATES_URI')
 MAILFUNC_URI = os.getenv('MAILFUNC_URI')
+CALLBACK_URI = os.getenv('CALLBACK_URI')
 API_KEY = os.getenv('API_KEY')
 
 running_campaign: dict[str, CampaignManager] = dict()
@@ -61,7 +63,7 @@ def process_before_launch(campaign: CampaignSchema, auth: AuthContext, targets: 
     check = set()
     for t in c.targets:
         t.ref = get_random_ref(check)
-        c.target_index_set[t.ref] = set()
+        c.target_index_set[t.ref] = (set(), t.email)
     running_campaign[ref] = c
     return c
 
@@ -159,3 +161,41 @@ async def stop_campaign(campaign_id: int, auth: AuthContext):
         running_campaign.pop(ref_key)
         return True
     return False
+
+
+async def handle_event(context: EventContext):
+    if context.sender == 'email' and not context.event_type in (EventType.FAIL, EventType.SEND, EventType.REPORT):
+        return False
+    if context.sender == 'site' and not context.event_type in (EventType.CLICK, EventType.OPEN, EventType.SUBMIT):
+        return False
+    if not context.ref_key in running_campaign:
+        return False
+    campaign_mgr = running_campaign[context.ref_key]
+    if not context.ref_id in campaign_mgr.target_index_set:
+        return False
+    if context.event_type in campaign_mgr.target_index_set[context.ref_id][0]:
+        return False
+    res = await callback_event(EventOutModel(
+        campaign_id=campaign_mgr.id,
+        r_id=context.ref_key+context.ref_id,
+        email=campaign_mgr.target_index_set[context.ref_id][1],
+        event=context.event_type,
+        details=context.payload
+    ))
+    if res:
+        campaign_mgr.target_index_set[context.ref_id].add(context.event_type)
+        return True
+    return False
+
+
+async def callback_event(e: EventOutModel):
+    async with AsyncClient() as client:
+        try:
+            header = {'Authorization': f'Bearer {API_KEY}'}
+            res = await client.post(CALLBACK_URI, json=e.dict(), headers=header)
+            data = res.json()
+            if res.status_code == 200 and data['success']:
+                return True
+        except Exception as e:
+            print(e)
+        return False

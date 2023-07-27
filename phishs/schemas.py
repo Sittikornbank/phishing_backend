@@ -127,7 +127,7 @@ class CampaignManager(BaseModel):
     email_template: EmailSchema | None = None
     smtp: SMTPModel | None = None
     targets: list[Target] = []
-    target_index_set: dict[str, set[EventType]]
+    target_index_set: dict[str, tuple[set[EventType], str]]
 
 
 class CompleteSchema(BaseModel):
@@ -146,5 +146,14 @@ class EventInModel(BaseModel):
 class EventOutModel(BaseModel):
     campaign_id: int
     r_id: str
-    event: EventType
+    email: str
+    message: EventType
     details: dict | None = None
+
+
+class EventContext(BaseModel):
+    sender: str
+    ref_key: str
+    ref_id: str
+    event_type: EventType
+    payload: dict | None = None

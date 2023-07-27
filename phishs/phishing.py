@@ -1,6 +1,6 @@
 import uvicorn
 from datetime import datetime
-from fastapi import Request, FastAPI, status, HTTPException, Depends
+from fastapi import Request, FastAPI, status, HTTPException, Depends, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import AuthContext, get_token, protect_api
 import schemas
 from controllers import (launch_template, process_before_launch,
-                         launch_email, stop_template, stop_campaign)
+                         launch_email, stop_template, stop_campaign,
+                         handle_event)
 import os
 
 load_dotenv()
@@ -81,8 +82,16 @@ def calculate_duration(start: datetime | None, stop: datetime | None):
         return 0
     return differ
 
-# @app.post('/event/email')
-# @app.post('/event/site')
+
+@app.post('/event')
+async def email_event(e: schemas.EventContext, _=Depends(protect_api)):
+    if e.sender in ['email', 'site']:
+        res = await handle_event(context=e)
+        return {'success': res}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail='Task not found'
+    )
 
 
 @app.post('/complete')
