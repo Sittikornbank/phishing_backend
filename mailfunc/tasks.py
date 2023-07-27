@@ -5,7 +5,7 @@ import time
 import jinja2
 import binascii
 from dotenv import load_dotenv
-from schemas import Target, TaskModel, Status, TaskStatModel
+from schemas import Target, TaskModel, Status, TaskStatModel, EventType
 from httpx import AsyncClient
 import smtplib
 import string
@@ -70,12 +70,12 @@ def stop_running_task(task_id: str):
 
 
 async def update_status(data: dict):
-    print(data)
+    # print(data)
     async with AsyncClient() as client:
         try:
-            data.update({'api_key': API_KEY})
-            data.update({'timestamp': time.time()})
-            res = await client.post(CALLBACK_URI, json=data)
+            data.update({'sender': 'email'})
+            header = {'Authorization': f'Bearer {API_KEY}'}
+            res = await client.post(CALLBACK_URI, json=data, headers=header)
             if res.status_code == 200:
                 return True
         except Exception as e:
@@ -137,8 +137,8 @@ async def send_email_task(task: TaskModel, smtp: SMTP, semaphore: threading.Sema
             delay = task.duration/len(task.targets)
         else:
             delay = 0
-        await update_status(
-            {'task_id': task.task_id, 'status': task.status, 'sent': 0})
+        # await update_status(
+        #     {'task_id': task.task_id, 'status': task.status, 'sent': 0})
         modify_status_dict(task_id=task.task_id, status=Status.RUNNING)
         for i, t in enumerate(task.targets):
             if not divide_sleep(delay, event):
@@ -151,16 +151,16 @@ async def send_email_task(task: TaskModel, smtp: SMTP, semaphore: threading.Sema
                 task.sent += 1
                 modify_status_dict(task_id=task.task_id, sent=task.sent)
                 await update_status(
-                    {'task_id': task.task_id, 'status': task.status, 'sent': task.sent, 'to_email': t.email})
+                    {'ref_key': task.task_id, 'ref_id': t.ref, 'event_type': EventType.SEND, 'payload': None})
             else:
                 task.fail += 1
                 modify_status_dict(task_id=task.task_id, fail=task.fail)
                 await update_status(
-                    {'task_id': task.task_id, 'status': task.status, 'fail_at': i})
+                    {'ref_key': task.task_id, 'ref_id': t.ref, 'event_type': EventType.FAIL, 'payload': None})
         # if task.sent == len(task.targets):
         task.status = Status.COMPLETE
-        await update_status(
-            {'task_id': task.task_id, 'status': task.status, 'sent': task.sent})
+        # await update_status(
+        #     {'task_id': task.task_id, 'status': task.status, 'sent': task.sent})
         remove_task_from_dict(task.task_id)
 
 

@@ -19,6 +19,15 @@ class Status(str, Enum):
     STOP = 'stop'
 
 
+class EventType(str, Enum):
+    FAIL = 'fail'
+    SEND = 'send_email'
+    OPEN = 'open_email'
+    CLICK = 'click_link'
+    SUBMIT = 'submit_data'
+    REPORT = 'report'
+
+
 class AuthContext(BaseModel):
     id: int
     role: Role = Role.GUEST
