@@ -389,7 +389,7 @@ async def handle_worker_post(req: Request, token: str = Depends(get_token)):
                                        event_type=body['event_type'])
         if 'payload' in body and body['payload']:
             context.payload = body['payload']
-        workers.process_event(context, wid)
+        await workers.process_event(context, wid)
         if body['event_type'] == schemas.Event.CLICK:
             temp = workers.get_landing(context, wid)
             if temp:

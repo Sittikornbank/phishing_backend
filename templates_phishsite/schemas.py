@@ -12,9 +12,9 @@ class Role(str, Enum):
 
 
 class Event(str, Enum):
-    OPEN = 'open'
-    CLICK = 'click'
-    SUBMIT = 'submit'
+    OPEN = 'open_email'
+    CLICK = 'click_link'
+    SUBMIT = 'submit_data'
 
 
 class AuthContext(BaseModel):
@@ -202,7 +202,7 @@ class EventContext(BaseModel):
     ref_key: str
     ref_id: str
     event_type: Event
-    payload: str | None
+    payload: dict | None = None
 
 
 class TemplateReqModel(BaseModel):

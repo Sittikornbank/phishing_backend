@@ -11,6 +11,9 @@ import jwt
 load_dotenv()
 
 SECRET = os.getenv("SECRET")
+CALLBACK_URI = os.getenv("CALLBACK_URI")
+API_KEY = os.getenv("API_KEY")
+
 tasks: dict[str, Task] = dict()
 
 
@@ -69,14 +72,24 @@ def code(lang: str):
         return '''print("hello world!")'''
 
 
-def process_event(context: EventContext, wid: int):
+async def update_status(data: dict):
+    print(data)
+    async with AsyncClient() as client:
+        try:
+            data.update({'sender': 'site'})
+            header = {'Authorization': f'Bearer {API_KEY}'}
+            res = await client.post(CALLBACK_URI, json=data, headers=header)
+            if res.status_code == 200:
+                return True
+        except Exception as e:
+            print(e)
+    return False
+
+
+async def process_event(context: EventContext, wid: int):
     if context.ref_key in tasks and context.ref_id in tasks[context.ref_key].ref_ids and \
             tasks[context.ref_key].worker_id == wid and time() > tasks[context.ref_key].start_at:
-        script_dir = os.path.dirname(__file__)
-        path = os.path.join(script_dir, f'log/{context.ref_key}.txt')
-        with open(path, 'a') as f:
-            f.write(
-                f'[{datetime.now().isoformat()}]Event:{context.event_type.value} Campaign:{context.ref_key} Tatget:{context.ref_id} Payload:{context.payload}\n')
+        await update_status(context.dict())
 
 
 def get_landing(context: EventContext, wid: int):
