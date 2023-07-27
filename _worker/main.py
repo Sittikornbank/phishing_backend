@@ -9,12 +9,7 @@ from httpx import AsyncClient
 import json
 import jinja2
 import sys
-import logging
 
-
-FORMAT = "%(levelname)s:     %(message)s"
-logging.basicConfig(format=FORMAT, level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -23,12 +18,16 @@ SECRET = None
 ID = None
 environment = jinja2.Environment()
 
+OPEN = 'open_email'
+CLICK = 'click_link'
+SUBMIT = 'submit_data'
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index(ref: str | None = None):
     if not ref:
         return HTMLResponse(status_code=404)
-    body = await emit_event('click', ref)
+    body = await emit_event(CLICK, ref)
     if body:
         try:
             template = environment.from_string(body['html'])
@@ -54,7 +53,7 @@ async def index(ref: str | None = None, email: str = Form(None),
     if phomenumber:
         t['phomenumber'] = phomenumber
     data = json.dumps(t)
-    body = await emit_event(event_type='submit', ref=ref, payload=data)
+    body = await emit_event(event_type=SUBMIT, ref=ref, payload=data)
     if body:
         return RedirectResponse(body['redirect_url'], status_code=303)
     return RedirectResponse("/", status_code=303)
@@ -73,24 +72,10 @@ async def get_image(ref: str | None = None):
     dot = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00\x04gAMA\x00\x00\xb1\x8f\x0b\xfca\x05\x00\x00\x00\tpHYs\x00\x00\x12t\x00\x00\x12t\x01\xdef\x1fx\x00\x00\x00\x0cIDAT\x18Wc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\xa75\x81\x84\x00\x00\x00\x00IEND\xaeB`\x82'
     if not ref:
         return Response(status_code=404)
-    body = await emit_event(event_type='open', ref=ref)
+    body = await emit_event(event_type=OPEN, ref=ref)
     if body and body['success']:
         return Response(content=dot, media_type="image/png")
     return Response(status_code=404)
-
-
-@app.get(
-    "/image/Logo.png",
-    responses={
-        200: {
-            "content": {"image/png": {}}
-        }
-    },
-    response_class=Response
-)
-async def get_image(ref: str | None = None):
-    dot = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00\x04gAMA\x00\x00\xb1\x8f\x0b\xfca\x05\x00\x00\x00\tpHYs\x00\x00\x12t\x00\x00\x12t\x01\xdef\x1fx\x00\x00\x00\x0cIDAT\x18Wc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\xa75\x81\x84\x00\x00\x00\x00IEND\xaeB`\x82'
-    return Response(content=dot, media_type="image/png")
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -166,6 +151,5 @@ if __name__ == "__main__":
     else:
         ID = 1
 
-    logger.info(
-        f"Phishsite Worker ID:{ID} SECRET:{SECRET[0]+'*'*(len(SECRET)-1)}")
+    print(f"Phishsite Worker ID:{ID} SECRET:{SECRET[0]+'*'*(len(SECRET)-1)}")
     uvicorn.run(app, host=host, port=port)
