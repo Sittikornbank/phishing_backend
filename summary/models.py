@@ -10,7 +10,7 @@ import os
 from schemas import (GroupModel, CampaignListModel, CampaignModel,
                      GroupListModel, GroupSumListModel, TargetModel,
                      EVENT, Summary, Status, EventModel, CampaignSummaryModel,
-                     CampaignSumListModel)
+                     CampaignSumListModel, EVENT)
 
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URI')
@@ -89,7 +89,7 @@ class Campaign(Base):
     templates_id = Column(Integer)
     group_id = Column(Integer, ForeignKey(
         "group_indexs.group_id", ondelete="SET NULL"))
-    status = Column(String(32))
+    status = Column(String(32), default=Status.IDLE)
     smtp_id = Column(Integer)
     launch_date = Column(DateTime(), default=None)
     send_by_date = Column(DateTime(), default=None)
@@ -655,6 +655,48 @@ def add_results(data: dict, camp: Campaign):
         db.add_all(targets)
         db.commit()
         return True
+    except Exception as e:
+        print(e)
+    return False
+
+
+def update_result(org_id: int, event: EventModel):
+    db: Session = next(get_db(org_id))
+    try:
+        result = db.query(Result).filter(Result.campaign_id ==
+                                         event.campaign_id, Result.r_id == event.r_id).first()
+        if not result:
+            raise Exception('result not found')
+
+        is_update = False
+        if event.message == EVENT.SEND and result.send_date == None:
+            result.send_date = event.time
+            result.status = EVENT.SEND
+            is_update = True
+        elif event.message == EVENT.OPEN and result.open_date == None:
+            result.open_date = event.time
+            result.status = EVENT.OPEN
+            is_update = True
+        elif event.message == EVENT.CLICK and result.click_date == None:
+            result.click_date = event.time
+            result.status = EVENT.CLICK
+            is_update = True
+        elif event.message == EVENT.SUBMIT and result.submit_date == None:
+            result.submit_date = event.time
+            result.status = EVENT.SUBMIT
+            is_update = True
+        elif event.message == EVENT.REPORT and result.report_date == None:
+            result.report_date = event.time
+            is_update = True
+        elif event.message == EVENT.FAIL and result.send_date == None:
+            result.status = EVENT.FAIL
+            is_update = True
+
+        if is_update:
+            result.modified_date = event.time
+            db.add(result)
+            db.commit()
+            return True
     except Exception as e:
         print(e)
     return False

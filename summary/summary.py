@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from models import Base, engine
 from schemas import Role, AuthContext, GroupFormModel
-from auth import auth_permission, auth_token
+from auth import auth_permission, auth_token, protect_api
 from dotenv import load_dotenv
 from datetime import datetime
 import schemas
@@ -511,8 +511,15 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
 
 
 @app.post("/event")
-def event_callback():
-    pass
+def event_callback(event: schemas.EventModel, _=Depends(protect_api)):
+    camp = models.get_campaign_by_id(event.campaign_id)
+    if not camp or camp.status == schemas.Status.COMPLETE or event.email == None or event.r_id == None:
+        return False
+    event.time = datetime.now()
+    if models.update_result(org_id=camp.org_id, event=event):
+        models.add_event(event=event)
+        return True
+    return False
 
 
 @app.put("/org")
