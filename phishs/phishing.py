@@ -87,7 +87,8 @@ def calculate_duration(start: datetime | None, stop: datetime | None):
 async def email_event(e: schemas.EventContext, _=Depends(protect_api)):
     if e.sender in ['email', 'site']:
         res = await handle_event(context=e)
-        return {'success': res}
+        if res:
+            return {'success': res}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail='Task not found'

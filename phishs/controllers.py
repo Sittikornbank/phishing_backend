@@ -179,7 +179,7 @@ async def handle_event(context: EventContext):
         campaign_id=campaign_mgr.id,
         r_id=context.ref_key+context.ref_id,
         email=campaign_mgr.target_index_set[context.ref_id][1],
-        event=context.event_type,
+        message=context.event_type,
         details=context.payload
     ))
     if res:
@@ -189,6 +189,7 @@ async def handle_event(context: EventContext):
 
 
 async def callback_event(e: EventOutModel):
+    print(e.dict())
     async with AsyncClient() as client:
         try:
             header = {'Authorization': f'Bearer {API_KEY}'}
