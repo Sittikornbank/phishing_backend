@@ -28,13 +28,13 @@ def init_org_db():
     global ORGANIZATION_DB
     ORGANIZATION_DB[0] = (engine, SessionLocal)
 
-    engine1 = create_engine(ORG_1_DB_URL, echo=False)
-    engine2 = create_engine(ORG_2_DB_URL, echo=False)
+    # engine1 = create_engine(ORG_1_DB_URL, echo=False)
+    # engine2 = create_engine(ORG_2_DB_URL, echo=False)
 
-    ORGANIZATION_DB[1] = (engine1, sessionmaker(
-        autocommit=False, autoflush=False, bind=engine1))
-    ORGANIZATION_DB[2] = (engine2, sessionmaker(
-        autocommit=False, autoflush=False, bind=engine2))
+    # ORGANIZATION_DB[1] = (engine1, sessionmaker(
+    #     autocommit=False, autoflush=False, bind=engine1))
+    # ORGANIZATION_DB[2] = (engine2, sessionmaker(
+    #     autocommit=False, autoflush=False, bind=engine2))
 
     for value in ORGANIZATION_DB.values():
         if value[0] != engine:
