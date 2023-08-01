@@ -183,7 +183,8 @@ async def handle_event(context: EventContext):
         details=context.payload
     ))
     if res:
-        campaign_mgr.target_index_set[context.ref_id].add(context.event_type)
+        campaign_mgr.target_index_set[context.ref_id][0].add(
+            context.event_type)
         return True
     return False
 

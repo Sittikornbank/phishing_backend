@@ -375,31 +375,25 @@ async def check_phishsite(lang: str, auth: AuthContext = Depends(auth_token)):
 
 
 @app.post('/workers')
-async def handle_worker_post(req: Request, token: str = Depends(get_token)):
-    body = await req.json()
-    if body and 'ref_key' in body and 'ref_id' in body and 'event_type' in body:
-        wid = workers.validate_token(token)
-        if wid < 1:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Not Found"
-            )
-        context = schemas.EventContext(ref_key=body['ref_key'],
-                                       ref_id=body['ref_id'],
-                                       event_type=body['event_type'])
-        if 'payload' in body and body['payload']:
-            context.payload = body['payload']
-        await workers.process_event(context, wid)
-        if body['event_type'] == schemas.Event.CLICK:
-            temp = workers.get_landing(context, wid)
-            if temp:
-                return {'html': temp.html}
-        elif body['event_type'] == schemas.Event.SUBMIT:
-            temp = workers.get_landing(context, wid)
-            if temp:
-                return {'redirect_url': temp.redirect_url}
-        else:
-            return {'success': workers.get_dotpng(context, wid)}
+async def handle_worker_post(context: schemas.EventContext, token: str = Depends(get_token)):
+    wid = workers.validate_token(token)
+    if wid < 1:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not Found"
+        )
+
+    await workers.process_event(context, wid)
+    if context.event_type == schemas.Event.CLICK:
+        temp = workers.get_landing(context, wid)
+        if temp:
+            return {'html': temp.html}
+    elif context.event_type == schemas.Event.SUBMIT:
+        temp = workers.get_landing(context, wid)
+        if temp:
+            return {'redirect_url': temp.redirect_url}
+    elif context.event_type == schemas.Event.OPEN:
+        return {'success': workers.get_dotpng(context, wid)}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Not Found"

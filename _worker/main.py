@@ -40,19 +40,20 @@ async def index(ref: str | None = None):
 @app.post("/", response_class=RedirectResponse)
 async def index(ref: str | None = None, email: str = Form(None),
                 username: str = Form(None), password: str = Form(None),
-                phomenumber: str = Form(None)):
+                phomenumber: str = Form(None), etc: str = Form(None)):
     if not ref:
         return RedirectResponse("/", status_code=303)
-    t = dict()
+    data = dict()
     if email:
-        t['email'] = email
+        data['email'] = email
     if username:
-        t['username'] = username
+        data['username'] = username
     if password:
-        t['password'] = password
+        data['password'] = password
     if phomenumber:
-        t['phomenumber'] = phomenumber
-    data = json.dumps(t)
+        data['phomenumber'] = phomenumber
+    if etc:
+        data['etc'] = etc
     body = await emit_event(event_type=SUBMIT, ref=ref, payload=data)
     if body:
         return RedirectResponse(body['redirect_url'], status_code=303)
