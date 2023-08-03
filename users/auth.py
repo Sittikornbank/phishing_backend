@@ -150,7 +150,7 @@ def check_used_email_pass(email: str, username: str):
     if check and (check['email'] or check['username']):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="email or password is alreay in used"
+            detail="email or username is alreay in used"
         )
     # if check and check['email']:
     #     raise HTTPException(

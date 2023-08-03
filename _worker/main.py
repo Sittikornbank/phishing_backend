@@ -13,7 +13,7 @@ import sys
 
 app = FastAPI()
 
-API = 'http://127.0.0.1:60502/workers'
+API = 'http://127.0.0.1:50502/workers'
 SECRET = None
 ID = None
 environment = jinja2.Environment()
