@@ -39,7 +39,7 @@ def send_verify_email(to_email: str, user_id: int):
     from_email = '<noreply>@tummainorrr.com'
     subject = 'Verification Email'
     message = 'Thank you for singed up to our service!\n' + \
-        f'Click here to verify your Email: http://{HOST}:{PORT}/verify?code={verification_token}' + \
+        f'Click here to verify your Email: http://159.138.237.134:{PORT}/verify?code={verification_token}' + \
         f'\nPlease verify your email within {EXPIRE_VERIFY} hour(s).'
 
     # สร้างอีเมล
