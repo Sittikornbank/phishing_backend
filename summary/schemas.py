@@ -220,7 +220,7 @@ class CampaignResultModel(BaseModel):
     id: int | None = None
     name: str | None = None
     status: str | None = None
-    results: list[ResultModel] = []
+    results: list[dict] = []
     timelines: list[EventModel] = []
     # analysis: list[dict] = list()
     statistics: dict = {}
