@@ -222,6 +222,8 @@ class CampaignResultModel(BaseModel):
     status: str | None = None
     results: list[ResultModel] = []
     timelines: list[EventModel] = []
+    # analysis: list[dict] = list()
+    statistics: dict = {}
 
     class Config:
         orm_mode = True

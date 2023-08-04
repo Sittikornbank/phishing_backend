@@ -7,10 +7,11 @@ from fastapi import HTTPException
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+from stat_ import get_res
 from schemas import (GroupModel, CampaignListModel, CampaignModel,
                      GroupListModel, GroupSumListModel, TargetModel,
                      EVENT, Summary, Status, EventModel, CampaignSummaryModel,
-                     CampaignSumListModel, EVENT)
+                     CampaignSumListModel, EVENT, ResultModel)
 
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URI')
@@ -557,8 +558,11 @@ def get_campaign_result_by_id(id: int):
     try:
         results = db.query(Result).filter(Result.campaign_id == id).all()
         events = db.query(Event).filter(Event.campaign_id == id).all()
-        setattr(camp, 'results', results)
+        analy, stat = get_res([ResultModel(**r.__dict__).dict()
+                              for r in results])
+        setattr(camp, 'results', analy)
         setattr(camp, 'timelines', events)
+        setattr(camp, 'statistics', stat)
         return camp
     except Exception as e:
         print(e)
