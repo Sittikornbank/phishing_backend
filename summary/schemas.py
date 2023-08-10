@@ -161,11 +161,11 @@ class CampaignListModel(BaseListModel):
 class Summary(BaseModel):
     total: int = Field(ge=0, default=0)
     sent: int = Field(ge=0, default=0)
-    opened: int = Field(ge=0, default=0)
-    clicked: int = Field(ge=0, default=0)
-    submitted: int = Field(ge=0, default=0)
-    reported: int = Field(ge=0, default=0)
-    failed: int = Field(ge=0, default=0)
+    open: int = Field(ge=0, default=0)
+    click: int = Field(ge=0, default=0)
+    submit: int = Field(ge=0, default=0)
+    report: int = Field(ge=0, default=0)
+    fail: int = Field(ge=0, default=0)
 
     class Config:
         orm_mode = True

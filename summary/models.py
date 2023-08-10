@@ -487,15 +487,15 @@ def get_campaign_summary(campaign_id: int, org_id: int | None, group_id: int | N
             if result._data[0] == EVENT.SEND:
                 summary.sent = result._data[1]
             elif result._data[0] == EVENT.OPEN:
-                summary.opened = result._data[1]
+                summary.open = result._data[1]
             elif result._data[0] == EVENT.CLICK:
-                summary.clicked = result._data[1]
+                summary.click = result._data[1]
             elif result._data[0] == EVENT.SUBMIT:
-                summary.submitted = result._data[1]
+                summary.submit = result._data[1]
             elif result._data[0] == EVENT.REPORT:
-                summary.reported = result._data[1]
+                summary.report = result._data[1]
             elif result._data[0] == EVENT.FAIL:
-                summary.failed = result._data[1]
+                summary.fail = result._data[1]
         return summary
     except Exception as e:
         print(e)
