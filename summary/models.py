@@ -704,3 +704,58 @@ def update_result(org_id: int, event: EventModel):
     except Exception as e:
         print(e)
     return False
+
+
+def get_all_result():
+    db: Session = next(get_db())
+    try:
+        return db.query(Result).all()
+    except Exception as e:
+        print(e)
+    return
+
+
+def get_result_by_id(id: int):
+    db: Session = next(get_db())
+    try:
+        return db.query(Result).filter(Result.id == id).first()
+    except Exception as e:
+        print(e)
+    return
+
+
+def count_status(all_results):
+    status_count = {
+        "sent": 0,
+        "open": 0,
+        "click": 0,
+        "submit": 0,
+        "report": 0,
+        "total": 0  # เพิ่มสถานะ total เพื่อนับทั้งหมด
+    }
+
+    for item in all_results:
+        if item.send_date:
+            status_count["sent"] += 1
+            status_count["total"] += 1  # เพิ่มการนับทั้งหมดที่ส่งไป
+        else:
+            # เพิ่มการนับทั้งหมดไม่ว่าจะส่งหรือไม่ส่ง
+            status_count["total"] += 1
+        if item.open_date:
+            status_count["open"] += 1
+        if item.click_date:
+            status_count["click"] += 1
+        if item.submit_date:
+            status_count["submit"] += 1
+        if item.report_date:
+            status_count["report"] += 1
+
+    result_summary = {
+        "total": status_count["total"],
+        "sent": status_count["sent"],
+        "open": status_count["open"],
+        "click": status_count["click"],
+        "submit": status_count["submit"],
+        "report": status_count["report"]
+    }
+    return result_summary
