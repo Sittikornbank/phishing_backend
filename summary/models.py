@@ -18,7 +18,7 @@ DATABASE_URL = os.getenv('DATABASE_URI')
 ORG_1_DB_URL = os.getenv('ORGANIZATION_DB_1')
 ORG_2_DB_URL = os.getenv('ORGANIZATION_DB_2')
 
-engine = create_engine(DATABASE_URL, echo=False, pool_size=15, max_overflow=15)
+engine = create_engine(DATABASE_URL, echo=False, pool_size=10, max_overflow=20)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
