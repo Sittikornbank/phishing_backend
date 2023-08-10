@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from datetime import datetime
 from dotenv import load_dotenv
 import os
-from stat_ import get_res
+from stat_ import get_res, get_res_ex
 from schemas import (GroupModel, CampaignListModel, CampaignModel,
                      GroupListModel, GroupSumListModel, TargetModel,
                      EVENT, Summary, Status, EventModel, CampaignSummaryModel,
@@ -762,3 +762,25 @@ def count_status(all_results):
         "fail": status_count["fail"]
     }
     return result_summary
+
+
+# use orgigtion get_campaign_result_by_id
+
+
+def get_campaign_result_by_id_for_export(id: int):
+    camp = get_campaign_by_id(id)
+    if not camp:
+        return
+    db: Session = next(get_db(camp.org_id))
+    try:
+        results = db.query(Result).filter(Result.campaign_id == id).all()
+        events = db.query(Event).filter(Event.campaign_id == id).all()
+        # chang data to dict for export
+        analy, stat = get_res_ex([ResultModel(**r.__dict__).dict()
+                                  for r in results])
+        timelines = ([EventModel(**r.__dict__).dict()
+                      for r in events])
+        return analy, timelines, stat
+    except Exception as e:
+        print(e)
+    return
