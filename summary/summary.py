@@ -531,6 +531,17 @@ def event_callback(event: schemas.EventModel, _=Depends(protect_api)):
 def update_org():
     pass
 
+@app.get("/campaigns/results/all")
+def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
+    if auth.role == Role.SUPER:
+        all_results = models.get_all_result()
+        return models.count_status(all_results)
+    elif auth.role in (Role.AUDITOR, Role.ADMIN):
+        org_results = models.get_result_by_id()
+        return models.count_status(org_results)
+    user_results = models.get_result_by_id()
+    return models.count_status(user_results)
+
 
 if __name__ == "__main__":
     models.init_org_db()
