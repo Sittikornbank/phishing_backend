@@ -14,11 +14,10 @@ from schemas import (GroupModel, CampaignListModel, CampaignModel,
                      CampaignSumListModel, EVENT, ResultModel)
 
 load_dotenv()
-DATABASE_URL = os.getenv('DATABASE_URI')
-ORG_1_DB_URL = os.getenv('ORGANIZATION_DB_1')
-ORG_2_DB_URL = os.getenv('ORGANIZATION_DB_2')
 
-engine = create_engine(DATABASE_URL, echo=False, pool_size=10, max_overflow=20)
+DATABASE_URI = os.getenv('DATABASE_URI')
+
+engine = create_engine(DATABASE_URI, echo=False, pool_size=10, max_overflow=20)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -163,14 +162,15 @@ def get_sum_group_no_org(page: int | None = None, size: int | None = None):
 
 
 def get_sum_groups_by_org(org_id: int, page: int | None = None, size: int | None = None):
-    with SessionLocal() as db:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        groups = list()
-        count = 0
-        try:
+
+    if not size or size < 0:
+        size = 25
+    if not page or page < 0:
+        page = 1
+    groups = list()
+    count = 0
+    try:
+        with SessionLocal() as db:
             groups = db.query(Group).limit(size).offset(size*(page-1)).all()
             count = db.query(Group).count()
             for g in groups:
@@ -179,9 +179,9 @@ def get_sum_groups_by_org(org_id: int, page: int | None = None, size: int | None
                                      last_page=(count//size)+1,
                                      limit=size,
                                      groups=groups)
-        except Exception as e:
-            print(e)
-        return GroupSumListModel()
+    except Exception as e:
+        print(e)
+    return GroupSumListModel()
 
 
 def get_sum_groups_by_id(id: int):
@@ -228,9 +228,7 @@ def get_org_of_group(id: int):
 
 
 def get_group_by_id(id: int):
-    org_id = get_org_of_group(id)
-    if org_id == None:
-        return
+
     with SessionLocal() as db:
         try:
             return db.query(Group).filter(Group.id == id).first()
