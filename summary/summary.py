@@ -678,6 +678,11 @@ def get_campaign_pdf(id: int, auth: AuthContext = Depends(auth_token)):
         detail=f"Campaign :{id} not found")
 
 
+@app.get('/check_pool')
+def get_pool():
+    return {'msg': models.engine.pool.status()}
+
+
 if __name__ == "__main__":
     models.init_org_db()
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))

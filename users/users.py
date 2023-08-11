@@ -436,6 +436,11 @@ def verification(code: str):
         return {'verify_success': False}
 
 
+@app.get('/check_pool')
+def get_pool():
+    return {'msg': engine.pool.status()}
+
+
 if __name__ == "__main__":
     create_user(UserDbModel(username='alongkot',
                             email='along@gmail.com',

@@ -380,6 +380,11 @@ def remove_mailing_task(auth: AuthContext, ref_key: str = Body(), _=Depends(prot
 # app.post('/validate')
 
 
+@app.get('/check_pool')
+def get_pool():
+    return {'msg': models.engine.pool.status()}
+
+
 if __name__ == "__main__":
     # Check if SMTP configuration with user_id=1 already exists
     existing_smtp = models.get_smtp_id(1)
