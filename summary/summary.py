@@ -3,6 +3,7 @@ from fastapi import Request, FastAPI, status, HTTPException, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from models import Base, engine
 from schemas import Role, AuthContext, GroupFormModel
 from auth import auth_permission, auth_token, protect_api
@@ -13,11 +14,18 @@ import models
 import tasks
 import uvicorn
 import os
+from stat_ import format_time
+import openpyxl
+from openpyxl.styles import Font, Alignment
+import pandas as pd
 
 app = FastAPI()
 
 load_dotenv()
 Base.metadata.create_all(bind=engine)
+# create folder
+RESULT_FOLDER = os.path.join(os.path.dirname(__file__), "result")
+app.mount("/images", StaticFiles(directory=RESULT_FOLDER), name="result")
 
 app = FastAPI()
 
@@ -531,6 +539,7 @@ def event_callback(event: schemas.EventModel, _=Depends(protect_api)):
 def update_org():
     pass
 
+
 @app.get("/campaigns/results/all")
 def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
@@ -541,6 +550,94 @@ def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
         return models.count_status(org_results)
     user_results = models.get_result_by_id()
     return models.count_status(user_results)
+
+############### For Export to Excel ###############
+
+# can't change for role
+
+
+@app.get("/campaigns/{id}/results/export")
+def get_results(id: int, auth: AuthContext = Depends(auth_token)):
+    camp = models.get_campaign_sum_by_id(id)
+    same = models.get_campaign_result_by_id_for_export(id)
+    results, timelines, statistics = same
+
+    overview_df = pd.DataFrame(camp, columns=['Events', 'Count'])
+
+    results_df = pd.DataFrame(results)
+    # drop data
+    results_df = results_df.drop(['r_id', 'firstname', 'lastname', 'status',
+                                 'ip', 'latitude', 'longitude', 'position', 'modified_date'], axis=1)
+    results_df = results_df.fillna('FALSE')
+
+    # Apply time formatting
+    time_columns = ['time_sent_to_submit', 'time_sent_to_open',
+                    'time_open_to_click', 'time_click_to_submit', 'time_sent_to_report']
+    for col in time_columns:
+        results_df[col] = results_df[col].apply(format_time)
+
+    timelines_df = pd.DataFrame(timelines)
+    timelines_df = timelines_df.drop(['campaign_id', 'r_id'], axis=1)
+    statistics_df = pd.DataFrame(statistics.items(), columns=['List', 'Value'])
+    statistics_df = statistics_df.fillna('FALSE')
+
+    # Convert time columns to timedelta
+    time_columns = [
+        'mean_time_sent_to_submit', 'mean_time_sent_to_open', 'mean_time_open_to_click',
+        'mean_time_click_to_submit', 'mean_time_sent_to_report',
+        'std_time_sent_to_submit', 'std_time_sent_to_open', 'std_time_open_to_click',
+        'std_time_click_to_submit', 'std_time_sent_to_report'
+    ]
+
+    for col in time_columns:
+        statistics_df.loc[statistics_df['List'] == col, 'Value'] = format_time(
+            statistics_df[statistics_df['List'] == col]['Value'].values[0])
+    # Define the Excel export path
+    # excel_path = r"C:\Users\Panda_X\Downloads\sheets_export_day_12.xlsx"
+
+    # iname = ''.join(choices(ascii_letters, k=8))
+    # results_filename = iname + '.xlsx'
+    results_filename = "Phishing Results for Campaign.xlsx"
+    excel_path = os.path.join(RESULT_FOLDER, results_filename)
+
+    # Calculate the maximum length of data in each column
+    max_lengths = results_df.apply(lambda col: col.astype(str).str.len().max())
+
+    # Create Excel writer and export data to sheets
+    with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+        overview_df.to_excel(writer, sheet_name='Overview', index=False)
+        results_df.to_excel(writer, sheet_name='Results', index=False)
+        timelines_df.to_excel(writer, sheet_name='Timelines', index=False)
+        statistics_df.to_excel(writer, sheet_name='Statistics', index=False)
+
+        # Access the workbook
+        workbook = writer.book
+
+        # Set header background color to blue
+        header_color = openpyxl.styles.PatternFill(
+            start_color="0066CC", end_color="0066CC", fill_type="solid")
+        white_font = Font(color="FFFFFF")  # Define a white font
+
+        # Apply header background color and white font color to each sheet
+        for sheet in workbook.worksheets:
+            for cell in sheet.iter_rows(min_row=1, max_row=1):
+                for c in cell:
+                    c.fill = header_color
+                    c.font = white_font  # Apply the white font color to the cell text
+
+            # Adjust column dimensions based on maximum data length
+            for i, column in enumerate(results_df.columns, start=1):
+                column_letter = openpyxl.utils.get_column_letter(i)
+                column_width = max_lengths[column] * \
+                    1.2  # Adjust the width as needed
+                sheet.column_dimensions[column_letter].width = column_width
+                # Center align data in cells
+                # Skip the header row
+                for row_cells in sheet.iter_rows(min_row=2):
+                    for cell in row_cells:
+                        cell.alignment = Alignment(
+                            horizontal="center", vertical="center")
+    return {'success': True}
 
 
 if __name__ == "__main__":
