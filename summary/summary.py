@@ -1,5 +1,5 @@
 
-from fastapi import Request, FastAPI, status, HTTPException, Depends
+from fastapi import Request, FastAPI, status, HTTPException, Depends, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +18,7 @@ from stat_ import format_time
 import openpyxl
 from openpyxl.styles import Font, Alignment
 import pandas as pd
+from io import BytesIO
 from exports import export_pdf
 
 app = FastAPI()
@@ -557,7 +558,10 @@ def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
 # can't change for role
 
 
-@app.get("/campaigns/{id}/results/export")
+# @app.get("/campaigns/{id}/results/export")
+@app.get("/campaigns/{id}/results/export", responses={
+    200: {"content": {"application/msexcel": {}}}
+})
 def get_results(id: int, auth: AuthContext = Depends(auth_token)):
     camp = models.get_campaign_sum_by_id(id)
     same = models.get_campaign_result_by_id_for_export(id)
@@ -604,8 +608,9 @@ def get_results(id: int, auth: AuthContext = Depends(auth_token)):
     # Calculate the maximum length of data in each column
     max_lengths = results_df.apply(lambda col: col.astype(str).str.len().max())
 
+    excel = BytesIO()
     # Create Excel writer and export data to sheets
-    with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+    with pd.ExcelWriter(excel, engine='openpyxl') as writer:
         overview_df.to_excel(writer, sheet_name='Overview', index=False)
         results_df.to_excel(writer, sheet_name='Results', index=False)
         timelines_df.to_excel(writer, sheet_name='Timelines', index=False)
@@ -638,16 +643,16 @@ def get_results(id: int, auth: AuthContext = Depends(auth_token)):
                     for cell in row_cells:
                         cell.alignment = Alignment(
                             horizontal="center", vertical="center")
-    return {'success': True}
+
+    return Response(content=excel.getvalue(), media_type="application/msexcel")
 
 # --------------------Export-PDF-------------------------#
 
 
-# @app.get("/campaigns/{id}/result/export_pdf", responses={
-#     200: {"content": {"application/pdf": {}}}
-# })
-@app.get("/campaigns/{id}/result/export_pdf")
-def get_campaign_sum(id: int, auth: AuthContext = Depends(auth_token)):
+@app.get("/campaigns/{id}/results/export_pdf", responses={
+    200: {"content": {"application/pdf": {}}}
+})
+def get_campaign_pdf(id: int, auth: AuthContext = Depends(auth_token)):
     camp = models.get_campaign_by_id(id)
     if not camp:
         raise HTTPException(

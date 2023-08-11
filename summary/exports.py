@@ -48,3 +48,4 @@ def convert_html_to_pdf():
 def export_pdf(campaign: Campaign):
     get_result_event_by_campaign(
         campaign_id=campaign.id, org_id=campaign.org_id)
+    return convert_html_to_pdf()
