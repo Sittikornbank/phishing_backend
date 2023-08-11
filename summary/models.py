@@ -131,62 +131,50 @@ class Result(Base):
     modified_date = Column(DateTime, default=datetime.now())
 
 
-def get_db(org_id: int = None):
-    db: Session = None
-    if org_id == None:
-        db: Session = SessionLocal()
-    elif org_id in ORGANIZATION_DB:
-        db: Session = ORGANIZATION_DB[org_id][1]()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 def get_groups_no_org(page: int | None = None, size: int | None = None):
     return get_groups_by_org(org_id=0, page=page, size=size)
 
 
 def get_groups_by_org(org_id: int, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db(org_id))
-    if not size or size < 0:
-        size = 25
-    if not page or page < 0:
-        page = 1
-    groups = list()
-    count = 0
-    try:
-        groups = db.query(Group).filter(Group.org_id == org_id).limit(
-            size).offset(size*(page-1)).all()
-        count = db.query(Group).filter(Group.org_id == org_id).count()
-        return GroupListModel(count=count, page=page,
-                              last_page=(count//size)+1,
-                              limit=size,
-                              groups=groups)
-    except Exception as e:
-        print(e)
-    return GroupListModel()
+    with SessionLocal() as db:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        groups = list()
+        count = 0
+        try:
+            groups = db.query(Group).filter(Group.org_id == org_id).limit(
+                size).offset(size*(page-1)).all()
+            count = db.query(Group).filter(Group.org_id == org_id).count()
+            return GroupListModel(count=count, page=page,
+                                  last_page=(count//size)+1,
+                                  limit=size,
+                                  groups=groups)
+        except Exception as e:
+            print(e)
+        return GroupListModel()
 
 
 def get_groups_by_user(user_id: int, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    if not size or size < 0:
-        size = 25
-    if not page or page < 0:
-        page = 1
-    groups = list()
-    count = 0
-    try:
-        groups = db.query(Group).filter(Group.user_id == user_id).limit(
-            size).offset(size*(page-1)).all()
-        count = db.query(Group).filter(Group.user_id == user_id).count()
-        return GroupListModel(count=count, page=page,
-                              last_page=(count//size)+1,
-                              limit=size,
-                              groups=groups)
-    except Exception as e:
-        print(e)
-    return GroupListModel()
+    with SessionLocal() as db:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        groups = list()
+        count = 0
+        try:
+            groups = db.query(Group).filter(Group.user_id == user_id).limit(
+                size).offset(size*(page-1)).all()
+            count = db.query(Group).filter(Group.user_id == user_id).count()
+            return GroupListModel(count=count, page=page,
+                                  last_page=(count//size)+1,
+                                  limit=size,
+                                  groups=groups)
+        except Exception as e:
+            print(e)
+        return GroupListModel()
 
 
 def get_sum_group_no_org(page: int | None = None, size: int | None = None):
@@ -194,25 +182,25 @@ def get_sum_group_no_org(page: int | None = None, size: int | None = None):
 
 
 def get_sum_groups_by_org(org_id: int, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db(org_id))
-    if not size or size < 0:
-        size = 25
-    if not page or page < 0:
-        page = 1
-    groups = list()
-    count = 0
-    try:
-        groups = db.query(Group).limit(size).offset(size*(page-1)).all()
-        count = db.query(Group).count()
-        for g in groups:
-            setattr(g, 'num_targets', len(g.targets))
-        return GroupSumListModel(count=count, page=page,
-                                 last_page=(count//size)+1,
-                                 limit=size,
-                                 groups=groups)
-    except Exception as e:
-        print(e)
-    return GroupSumListModel()
+    with SessionLocal() as db:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        groups = list()
+        count = 0
+        try:
+            groups = db.query(Group).limit(size).offset(size*(page-1)).all()
+            count = db.query(Group).count()
+            for g in groups:
+                setattr(g, 'num_targets', len(g.targets))
+            return GroupSumListModel(count=count, page=page,
+                                     last_page=(count//size)+1,
+                                     limit=size,
+                                     groups=groups)
+        except Exception as e:
+            print(e)
+        return GroupSumListModel()
 
 
 def get_sum_groups_by_id(id: int):
@@ -224,131 +212,99 @@ def get_sum_groups_by_id(id: int):
 
 
 def get_sum_groups_by_user(user_id: int, org_id: int | None, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db(org_id))
-    if not size or size < 0:
-        size = 25
-    if not page or page < 0:
-        page = 1
-    groups = list()
-    count = 0
-    try:
-        groups = db.query(Group).filter(Group.user_id == user_id).limit(
-            size).offset(size*(page-1)).all()
-        count = db.query(Group).filter(Group.user_id == user_id).count()
-        for g in groups:
-            setattr(g, 'num_targets', len(g.targets))
-        return GroupSumListModel(count=count, page=page,
-                                 last_page=(count//size)+1,
-                                 limit=size,
-                                 groups=groups)
-    except Exception as e:
-        print(e)
-    return GroupSumListModel()
+    with SessionLocal() as db:
+        if not size or size < 0:
+            size = 25
+        if not page or page < 0:
+            page = 1
+        groups = list()
+        count = 0
+        try:
+            groups = db.query(Group).filter(Group.user_id == user_id).limit(
+                size).offset(size*(page-1)).all()
+            count = db.query(Group).filter(Group.user_id == user_id).count()
+            for g in groups:
+                setattr(g, 'num_targets', len(g.targets))
+            return GroupSumListModel(count=count, page=page,
+                                     last_page=(count//size)+1,
+                                     limit=size,
+                                     groups=groups)
+        except Exception as e:
+            print(e)
+        return GroupSumListModel()
 
 
 def get_org_of_group(id: int):
-    db: Session = next(get_db())
-    try:
-        g: GroupIndex = db.query(GroupIndex).filter(
-            GroupIndex.group_id == id).first()
-        if g:
-            return g.org_id
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            g: GroupIndex = db.query(GroupIndex).filter(
+                GroupIndex.group_id == id).first()
+            if g:
+                return g.org_id
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_group_by_id(id: int):
     org_id = get_org_of_group(id)
     if org_id == None:
         return
-    db: Session = next(get_db(org_id))
-    try:
-        return db.query(Group).filter(Group.id == id).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(Group).filter(Group.id == id).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def count_groups_by_user(user_id: int, org_id: int):
-    db: Session = next(get_db(org_id))
-    try:
-        count = db.query(Group).filter(Group.user_id == user_id).count()
-        return count
-    except Exception as e:
-        print(e)
-    return 0
+    with SessionLocal() as db:
+        try:
+            count = db.query(Group).filter(Group.user_id == user_id).count()
+            return count
+        except Exception as e:
+            print(e)
+        return 0
 
 
 def create_group_index(org_id: int):
-    db: Session = next(get_db())
-    try:
-        group_index = GroupIndex(
-            org_id=org_id
-        )
-        db.add(group_index)
-        db.commit()
-        db.refresh(group_index)
-        return group_index
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            group_index = GroupIndex(
+                org_id=org_id
+            )
+            db.add(group_index)
+            db.commit()
+            db.refresh(group_index)
+            return group_index
+        except Exception as e:
+            print(e)
+        return
 
 
 def delete_group_index(id: int):
-    db: Session = next(get_db())
-    try:
-        c = db.query(GroupIndex).filter(GroupIndex.id == id).delete()
-        return c > 0
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            c = db.query(GroupIndex).filter(GroupIndex.id == id).delete()
+            return c > 0
+        except Exception as e:
+            print(e)
+        return
 
 
 def create_group(group_in: GroupModel):
     group_index = create_group_index(group_in.org_id)
     if not group_index:
         return
-    db: Session = next(get_db(group_in.org_id))
-    try:
-        group = Group(
-            id=group_index.group_id,
-            name=group_in.name,
-            modified_date=group_in.modified_date,
-            user_id=group_in.user_id,
-            org_id=group_in.org_id)
-        targets = [
-            Target(
-                firstname=t.firstname,
-                lastname=t.lastname,
-                email=t.email,
-                position=t.position,
-                department=t.department,
-                phonenumber=t.phonenumber,
-            )
-            for t in group_in.targets
-        ]
-        group.targets = targets
-        db.add(group)
-        db.commit()
-        db.refresh(group)
-        return group
-    except Exception as e:
-        print(e)
-    return
-
-
-def update_group(id: int, group_in: dict, add_targets: list[TargetModel] | None,
-                 remove_targets: list[int] | None, org_id: int | None, max_target: int = -1):
-    db: Session = next(get_db(org_id))
-    try:
-        group = db.query(Group).filter(
-            Group.id == id, Group.org_id == org_id).first()
-        if remove_targets:
-            db.query(Target).filter(Target.group_id ==
-                                    group.id, Target.id.in_(remove_targets)).delete()
-            group.modified_date = datetime.now()
-        if add_targets:
+    with SessionLocal() as db:
+        try:
+            group = Group(
+                id=group_index.group_id,
+                name=group_in.name,
+                modified_date=group_in.modified_date,
+                user_id=group_in.user_id,
+                org_id=group_in.org_id)
             targets = [
                 Target(
                     firstname=t.firstname,
@@ -356,119 +312,154 @@ def update_group(id: int, group_in: dict, add_targets: list[TargetModel] | None,
                     email=t.email,
                     position=t.position,
                     department=t.department,
-                    phonenumber=t.phonenumber
-                ) for t in add_targets
+                    phonenumber=t.phonenumber,
+                )
+                for t in group_in.targets
             ]
-            db.add_all(targets)
-            group.targets.extend(targets)
-            if max_target > 0 and db.query(Target).filter(
-                    Target.group_id == group.id).count() > max_target:
-                raise HTTPException(
-                    status_code=403, detail='Targets more than Max allow')
-            group.modified_date = datetime.now()
-        if group_in:
-            group.modified_date = datetime.now()
-            group.name = group_in['name']
-
-        if group and (remove_targets or add_targets or group_in):
+            group.targets = targets
             db.add(group)
             db.commit()
             db.refresh(group)
             return group
+        except Exception as e:
+            print(e)
+        return
 
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print(e)
-    return
+
+def update_group(id: int, group_in: dict, add_targets: list[TargetModel] | None,
+                 remove_targets: list[int] | None, org_id: int | None, max_target: int = -1):
+    with SessionLocal() as db:
+        try:
+            group = db.query(Group).filter(
+                Group.id == id, Group.org_id == org_id).first()
+            if remove_targets:
+                db.query(Target).filter(Target.group_id ==
+                                        group.id, Target.id.in_(remove_targets)).delete()
+                group.modified_date = datetime.now()
+            if add_targets:
+                targets = [
+                    Target(
+                        firstname=t.firstname,
+                        lastname=t.lastname,
+                        email=t.email,
+                        position=t.position,
+                        department=t.department,
+                        phonenumber=t.phonenumber
+                    ) for t in add_targets
+                ]
+                db.add_all(targets)
+                group.targets.extend(targets)
+                if max_target > 0 and db.query(Target).filter(
+                        Target.group_id == group.id).count() > max_target:
+                    raise HTTPException(
+                        status_code=403, detail='Targets more than Max allow')
+                group.modified_date = datetime.now()
+            if group_in:
+                group.modified_date = datetime.now()
+                group.name = group_in['name']
+
+            if group and (remove_targets or add_targets or group_in):
+                db.add(group)
+                db.commit()
+                db.refresh(group)
+                return group
+
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            print(e)
+        return
 
 
 def delete_group(id: int, org_id: int | None):
-    db: Session = next(get_db(org_id))
-    try:
-        c = db.query(Group).filter(Group.id == id,
-                                   Group.org_id == org_id).delete()
-        return c > 0
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            c = db.query(Group).filter(Group.id == id,
+                                       Group.org_id == org_id).delete()
+            return c > 0
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_all_campaigns(page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        campaigns = db.query(Campaign).limit(size).offset(size*(page-1)).all()
-        count = db.query(Campaign).count()
-        return CampaignListModel(count=count,
-                                 page=page,
-                                 limit=size,
-                                 last_page=(count//size)+1,
-                                 campaigns=campaigns)
-    except Exception as e:
-        print(e)
-    return CampaignListModel()
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            campaigns = db.query(Campaign).limit(
+                size).offset(size*(page-1)).all()
+            count = db.query(Campaign).count()
+            return CampaignListModel(count=count,
+                                     page=page,
+                                     limit=size,
+                                     last_page=(count//size)+1,
+                                     campaigns=campaigns)
+        except Exception as e:
+            print(e)
+        return CampaignListModel()
 
 
 def get_campaign_by_id(id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(Campaign).filter(Campaign.id == id).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(Campaign).filter(Campaign.id == id).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_campaigns_by_user(user_id: int, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        campaigns = db.query(Campaign).filter(
-            Campaign.user_id == user_id).limit(size).offset(size*(page-1)).all()
-        count = db.query(Campaign).filter(Campaign.user_id == user_id).count()
-        return CampaignListModel(count=count,
-                                 page=page,
-                                 limit=size,
-                                 last_page=(count//size)+1,
-                                 campaigns=campaigns)
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            campaigns = db.query(Campaign).filter(
+                Campaign.user_id == user_id).limit(size).offset(size*(page-1)).all()
+            count = db.query(Campaign).filter(
+                Campaign.user_id == user_id).count()
+            return CampaignListModel(count=count,
+                                     page=page,
+                                     limit=size,
+                                     last_page=(count//size)+1,
+                                     campaigns=campaigns)
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_campaigns_by_org(org_id: int, page: int | None = None, size: int | None = None):
-    db: Session = next(get_db())
-    try:
-        if not size or size < 0:
-            size = 25
-        if not page or page < 0:
-            page = 1
-        campaigns = db.query(Campaign).filter(
-            Campaign.org_id == org_id).limit(size).offset(size*(page-1)).all()
-        count = db.query(Campaign).filter(Campaign.org_id == org_id).count()
-        return CampaignListModel(count=count,
-                                 page=page,
-                                 limit=size,
-                                 last_page=(count//size)+1,
-                                 campaigns=campaigns)
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            if not size or size < 0:
+                size = 25
+            if not page or page < 0:
+                page = 1
+            campaigns = db.query(Campaign).filter(
+                Campaign.org_id == org_id).limit(size).offset(size*(page-1)).all()
+            count = db.query(Campaign).filter(
+                Campaign.org_id == org_id).count()
+            return CampaignListModel(count=count,
+                                     page=page,
+                                     limit=size,
+                                     last_page=(count//size)+1,
+                                     campaigns=campaigns)
+        except Exception as e:
+            print(e)
+        return
 
 
 def count_campaign_by_user(user_id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(Campaign).filter(Campaign.user_id == user_id).count()
-    except Exception as e:
-        print(e)
-    return 0
+    with SessionLocal() as db:
+        try:
+            return db.query(Campaign).filter(Campaign.user_id == user_id).count()
+        except Exception as e:
+            print(e)
+        return 0
 
 
 def get_campaign_summary(campaign_id: int, org_id: int | None, group_id: int | None):
@@ -478,28 +469,28 @@ def get_campaign_summary(campaign_id: int, org_id: int | None, group_id: int | N
         if g:
             summary.total = g.num_targets
 
-    db: Session = next(get_db(org_id))
-    try:
-        results = db.query(Event.message, func.count()).filter(Event.campaign_id ==
-                                                               campaign_id).group_by(Event.message).all()
+    with SessionLocal() as db:
+        try:
+            results = db.query(Event.message, func.count()).filter(Event.campaign_id ==
+                                                                   campaign_id).group_by(Event.message).all()
 
-        for result in results:
-            if result._data[0] == EVENT.SEND:
-                summary.sent = result._data[1]
-            elif result._data[0] == EVENT.OPEN:
-                summary.open = result._data[1]
-            elif result._data[0] == EVENT.CLICK:
-                summary.click = result._data[1]
-            elif result._data[0] == EVENT.SUBMIT:
-                summary.submit = result._data[1]
-            elif result._data[0] == EVENT.REPORT:
-                summary.report = result._data[1]
-            elif result._data[0] == EVENT.FAIL:
-                summary.fail = result._data[1]
-        return summary
-    except Exception as e:
-        print(e)
-    return
+            for result in results:
+                if result._data[0] == EVENT.SEND:
+                    summary.sent = result._data[1]
+                elif result._data[0] == EVENT.OPEN:
+                    summary.open = result._data[1]
+                elif result._data[0] == EVENT.CLICK:
+                    summary.click = result._data[1]
+                elif result._data[0] == EVENT.SUBMIT:
+                    summary.submit = result._data[1]
+                elif result._data[0] == EVENT.REPORT:
+                    summary.report = result._data[1]
+                elif result._data[0] == EVENT.FAIL:
+                    summary.fail = result._data[1]
+            return summary
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_all_campaigns_sum(page: int | None = None, size: int | None = None):
@@ -554,65 +545,65 @@ def get_campaign_result_by_id(id: int):
     camp = get_campaign_by_id(id)
     if not camp:
         return
-    db: Session = next(get_db(camp.org_id))
-    try:
-        results = db.query(Result).filter(Result.campaign_id == id).all()
-        events = db.query(Event).filter(Event.campaign_id == id).all()
-        analy, stat = get_res([ResultModel(**r.__dict__).dict()
-                              for r in results])
-        setattr(camp, 'results', analy)
-        setattr(camp, 'timelines', events)
-        setattr(camp, 'statistics', stat)
-        return camp
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            results = db.query(Result).filter(Result.campaign_id == id).all()
+            events = db.query(Event).filter(Event.campaign_id == id).all()
+            analy, stat = get_res([ResultModel(**r.__dict__).dict()
+                                   for r in results])
+            setattr(camp, 'results', analy)
+            setattr(camp, 'timelines', events)
+            setattr(camp, 'statistics', stat)
+            return camp
+        except Exception as e:
+            print(e)
+        return
 
 
 def create_campaign(cam_in: CampaignModel):
-    db: Session = next(get_db())
-    try:
-        campaign = Campaign(
-            user_id=cam_in.user_id,
-            org_id=cam_in.org_id,
-            name=cam_in.name,
-            created_date=cam_in.create_date,
-            completed_date=None,
-            templates_id=cam_in.templates_id,
-            group_id=cam_in.group_id,
-            status=Status.IDLE,
-            smtp_id=cam_in.smtp_id,
-            launch_date=cam_in.launch_date,
-            send_by_date=cam_in.send_by_date
-        )
-        db.add(campaign)
-        db.commit()
-        db.refresh(campaign)
-        return campaign
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            campaign = Campaign(
+                user_id=cam_in.user_id,
+                org_id=cam_in.org_id,
+                name=cam_in.name,
+                created_date=cam_in.create_date,
+                completed_date=None,
+                templates_id=cam_in.templates_id,
+                group_id=cam_in.group_id,
+                status=Status.IDLE,
+                smtp_id=cam_in.smtp_id,
+                launch_date=cam_in.launch_date,
+                send_by_date=cam_in.send_by_date
+            )
+            db.add(campaign)
+            db.commit()
+            db.refresh(campaign)
+            return campaign
+        except Exception as e:
+            print(e)
+        return
 
 
 def update_campaign(id: int, cam_in: dict):
-    db: Session = next(get_db())
-    try:
-        db.query(Campaign).filter(Campaign.id == id).update(cam_in)
-        db.commit()
-        return get_campaign_by_id(id)
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            db.query(Campaign).filter(Campaign.id == id).update(cam_in)
+            db.commit()
+            return get_campaign_by_id(id)
+        except Exception as e:
+            print(e)
+        return
 
 
 def delete_campaign(id: int):
-    db: Session = next(get_db())
-    try:
-        c = db.query(Campaign).filter(Campaign.id == id).delete()
-        return c > 0
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            c = db.query(Campaign).filter(Campaign.id == id).delete()
+            return c > 0
+        except Exception as e:
+            print(e)
+        return
 
 
 def add_event(event: EventModel):
@@ -621,107 +612,107 @@ def add_event(event: EventModel):
         return
     if camp.status == Status.COMPLETE:
         return
-    db: Session = next(get_db(camp.org_id))
-    try:
-        event = Event(
-            campaign_id=event.campaign_id,
-            email=event.email,
-            time=event.time,
-            message=event.message,
-            details=event.details
-        )
-        db.add(event)
-        db.commit()
-        db.refresh(event)
-        return event
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            event = Event(
+                campaign_id=event.campaign_id,
+                email=event.email,
+                time=event.time,
+                message=event.message,
+                details=event.details
+            )
+            db.add(event)
+            db.commit()
+            db.refresh(event)
+            return event
+        except Exception as e:
+            print(e)
+        return
 
 
 def add_results(data: dict, camp: Campaign):
     if not ('ref_key' in data) or not ('targets' in data):
         return False
-    db: Session = next(get_db(camp.org_id))
-    try:
-        targets = [
-            Result(
-                campaign_id=camp.id,
-                user_id=camp.user_id,
-                r_id=data['ref_key']+t['ref'],
-                email=t['email'],
-                firstname=t['firstname'],
-                lastname=t['lastname'],
-                department=t['department'],
-                position=t['position']
-            ) for t in data['targets']
-        ]
-        db.add_all(targets)
-        db.commit()
-        return True
-    except Exception as e:
-        print(e)
-    return False
+    with SessionLocal() as db:
+        try:
+            targets = [
+                Result(
+                    campaign_id=camp.id,
+                    user_id=camp.user_id,
+                    r_id=data['ref_key']+t['ref'],
+                    email=t['email'],
+                    firstname=t['firstname'],
+                    lastname=t['lastname'],
+                    department=t['department'],
+                    position=t['position']
+                ) for t in data['targets']
+            ]
+            db.add_all(targets)
+            db.commit()
+            return True
+        except Exception as e:
+            print(e)
+        return False
 
 
 def update_result(org_id: int, event: EventModel):
-    db: Session = next(get_db(org_id))
-    try:
-        result = db.query(Result).filter(Result.campaign_id ==
-                                         event.campaign_id, Result.r_id == event.r_id).first()
-        if not result:
-            raise Exception('result not found')
+    with SessionLocal() as db:
+        try:
+            result = db.query(Result).filter(Result.campaign_id ==
+                                             event.campaign_id, Result.r_id == event.r_id).first()
+            if not result:
+                raise Exception('result not found')
 
-        is_update = False
-        if event.message == EVENT.SEND and result.send_date == None:
-            result.send_date = event.time
-            result.status = EVENT.SEND
-            is_update = True
-        elif event.message == EVENT.OPEN and result.open_date == None:
-            result.open_date = event.time
-            result.status = EVENT.OPEN
-            is_update = True
-        elif event.message == EVENT.CLICK and result.click_date == None:
-            result.click_date = event.time
-            result.status = EVENT.CLICK
-            is_update = True
-        elif event.message == EVENT.SUBMIT and result.submit_date == None:
-            result.submit_date = event.time
-            result.status = EVENT.SUBMIT
-            is_update = True
-        elif event.message == EVENT.REPORT and result.report_date == None:
-            result.report_date = event.time
-            is_update = True
-        elif event.message == EVENT.FAIL and result.send_date == None:
-            result.status = EVENT.FAIL
-            is_update = True
+            is_update = False
+            if event.message == EVENT.SEND and result.send_date == None:
+                result.send_date = event.time
+                result.status = EVENT.SEND
+                is_update = True
+            elif event.message == EVENT.OPEN and result.open_date == None:
+                result.open_date = event.time
+                result.status = EVENT.OPEN
+                is_update = True
+            elif event.message == EVENT.CLICK and result.click_date == None:
+                result.click_date = event.time
+                result.status = EVENT.CLICK
+                is_update = True
+            elif event.message == EVENT.SUBMIT and result.submit_date == None:
+                result.submit_date = event.time
+                result.status = EVENT.SUBMIT
+                is_update = True
+            elif event.message == EVENT.REPORT and result.report_date == None:
+                result.report_date = event.time
+                is_update = True
+            elif event.message == EVENT.FAIL and result.send_date == None:
+                result.status = EVENT.FAIL
+                is_update = True
 
-        if is_update:
-            result.modified_date = event.time
-            db.add(result)
-            db.commit()
-            return True
-    except Exception as e:
-        print(e)
-    return False
+            if is_update:
+                result.modified_date = event.time
+                db.add(result)
+                db.commit()
+                return True
+        except Exception as e:
+            print(e)
+        return False
 
 
 def get_all_result():
-    db: Session = next(get_db())
-    try:
-        return db.query(Result).all()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(Result).all()
+        except Exception as e:
+            print(e)
+        return
 
 
 def get_result_by_id(id: int):
-    db: Session = next(get_db())
-    try:
-        return db.query(Result).filter(Result.id == id).first()
-    except Exception as e:
-        print(e)
-    return
+    with SessionLocal() as db:
+        try:
+            return db.query(Result).filter(Result.id == id).first()
+        except Exception as e:
+            print(e)
+        return
 
 
 def count_status(all_results):
