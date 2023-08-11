@@ -684,5 +684,4 @@ def get_pool():
 
 
 if __name__ == "__main__":
-    models.init_org_db()
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv('PORT')))
