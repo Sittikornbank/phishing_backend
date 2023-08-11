@@ -784,3 +784,21 @@ def get_campaign_result_by_id_for_export(id: int):
     except Exception as e:
         print(e)
     return
+
+# query the result and event directly
+
+
+def get_result_event_by_campaign(campaign_id: int, org_id: int):
+    db: Session = next(get_db(org_id))
+    data_list = []
+    try:
+        data = db.query(Result, Event).filter(Result.campaign_id == campaign_id,
+                                              Event.campaign_id == campaign_id,
+                                              Result.email == Event.email)
+        for result, event in data:
+            setattr(result, 'events', event)
+            data_list.append(result)
+    except Exception as e:
+        print(e)
+    print(data_list)
+    return data_list

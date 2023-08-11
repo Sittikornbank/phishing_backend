@@ -18,6 +18,7 @@ from stat_ import format_time
 import openpyxl
 from openpyxl.styles import Font, Alignment
 import pandas as pd
+from exports import export_pdf
 
 app = FastAPI()
 
@@ -638,6 +639,38 @@ def get_results(id: int, auth: AuthContext = Depends(auth_token)):
                         cell.alignment = Alignment(
                             horizontal="center", vertical="center")
     return {'success': True}
+
+# --------------------Export-PDF-------------------------#
+
+
+# @app.get("/campaigns/{id}/result/export_pdf", responses={
+#     200: {"content": {"application/pdf": {}}}
+# })
+@app.get("/campaigns/{id}/result/export_pdf")
+def get_campaign_sum(id: int, auth: AuthContext = Depends(auth_token)):
+    camp = models.get_campaign_by_id(id)
+    if not camp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Campaign :{id} not found")
+    if auth.role == Role.SUPER:
+        return export_pdf(camp)
+
+    if auth.role in (Role.ADMIN, Role.AUDITOR):
+        if camp.org_id != auth.organization:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Campaign :{id} not found")
+        return camp
+    elif auth.role in (Role.PAID, Role.GUEST):
+        if camp.user_id != auth.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Campaign :{id} not found")
+        return camp
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Campaign :{id} not found")
 
 
 if __name__ == "__main__":
