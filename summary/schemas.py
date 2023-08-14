@@ -56,7 +56,7 @@ class GroupModel(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     modified_date: datetime | None = datetime.now()
     user_id: int | None = Field(gt=0)
-    org_id: int | None = Field(gt=0)
+    org_id: int | None = Field(ge=0)
     targets: list[TargetModel] = []
 
 

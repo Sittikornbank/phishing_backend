@@ -248,9 +248,9 @@ def get_group_by_id(id: int):
     with SessionLocal() as db:
         try:
             groups = db.query(Group).filter(Group.id == id).first()
-            return GroupDisplayModel(id=groups.id, name=groups.name,
-                                     modified_date=groups.modified_date,
-                                     targets=groups.targets)
+            return GroupModel(id=groups.id, name=groups.name,
+                              modified_date=groups.modified_date, user_id=groups.user_id,
+                              org_id=groups.org_id, targets=groups.targets)
         except Exception as e:
             print(e)
         return
