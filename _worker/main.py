@@ -9,7 +9,7 @@ from httpx import AsyncClient
 import json
 import jinja2
 import sys
-
+from user_agents import parse
 
 app = FastAPI()
 
@@ -23,10 +23,44 @@ CLICK = 'click_link'
 SUBMIT = 'submit_data'
 
 
+def parse_user_agent(user_agent):
+    user_agent_parsed = parse(user_agent)
+
+    return {
+        'browser': user_agent_parsed.browser.family + '/' + user_agent_parsed.browser.version_string,
+        'operating_system': user_agent_parsed.os.family + ' ' + user_agent_parsed.os.version_string
+    }
+
+
+async def test(request: Request, ref):
+    file_path = "User.txt"
+    with open(file_path, 'a') as file:
+        file.write("------------------------------\n")
+        file.write(str(request.headers) + "\n")
+        file.write(str(request.client) + "\n")
+        file.write("ref :" + ref + "\n")
+        file.write("------------------------------\n")
+
+    head = request.headers
+
+    user_agent = head.get("User-Agent")
+
+    data = dict()
+    if user_agent:
+        data['ip'] = head.get("host")
+        parsed_user_agent = parse_user_agent(user_agent)
+        data['client'] = str(request.client.host)
+        data.update(parsed_user_agent)
+
+    print(data)
+    return data
+
+
 @app.get("/", response_class=HTMLResponse)
-async def index(ref: str | None = None):
+async def index(requset: Request, ref: str | None = None):
     if not ref:
         return HTMLResponse(status_code=404)
+    await test(requset, ref)
     body = await emit_event(CLICK, ref)
     if body:
         try:
@@ -38,7 +72,7 @@ async def index(ref: str | None = None):
 
 
 @app.post("/", response_class=RedirectResponse)
-async def index(ref: str | None = None, email: str = Form(None),
+async def index(request: Request, ref: str | None = None, email: str = Form(None),
                 username: str = Form(None), password: str = Form(None),
                 phomenumber: str = Form(None), etc: str = Form(None)):
     if not ref:
@@ -54,6 +88,9 @@ async def index(ref: str | None = None, email: str = Form(None),
         data['phomenumber'] = phomenumber
     if etc:
         data['etc'] = etc
+    await test(request, ref)
+    data.update()
+
     body = await emit_event(event_type=SUBMIT, ref=ref, payload=data)
     if body:
         return RedirectResponse(body['redirect_url'], status_code=303)
