@@ -60,8 +60,8 @@ async def test(request: Request, ref):
 async def index(requset: Request, ref: str | None = None):
     if not ref:
         return HTMLResponse(status_code=404)
-    await test(requset, ref)
-    body = await emit_event(CLICK, ref)
+    agent = await test(requset, ref)
+    body = await emit_event(CLICK, ref, agent)
     if body:
         try:
             return body['html']
@@ -87,8 +87,8 @@ async def index(request: Request, ref: str | None = None, email: str = Form(None
         data['phomenumber'] = phomenumber
     if etc:
         data['etc'] = etc
-    await test(request, ref)
-    data.update()
+    agent = await test(request, ref)
+    data.update(agent)
 
     body = await emit_event(event_type=SUBMIT, ref=ref, payload=data)
     if body:
