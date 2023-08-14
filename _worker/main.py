@@ -64,10 +64,9 @@ async def index(requset: Request, ref: str | None = None):
     body = await emit_event(CLICK, ref)
     if body:
         try:
-            template = environment.from_string(body['html'])
-            return template.render()
+            return body['html']
         except Exception as e:
-            print(e)
+            print(e, body['html'])
     return HTMLResponse(status_code=404)
 
 
