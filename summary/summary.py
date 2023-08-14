@@ -562,7 +562,8 @@ def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
 @app.get("/campaigns/{id}/results/export", responses={
     200: {"content": {"application/msexcel": {}}}
 })
-def get_results(id: int, auth: AuthContext = Depends(auth_token)):
+# def get_results(id: int, auth: AuthContext = Depends(auth_token)):
+def get_results(id: int):
     camp = models.get_campaign_sum_by_id(id)
     same = models.get_campaign_result_by_id_for_export(id)
     results, timelines, statistics = same
