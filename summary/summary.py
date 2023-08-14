@@ -66,7 +66,7 @@ async def get_groups(page: int | None = 1, limit: int | None = 25, auth: AuthCon
 
 
 @app.get("/groups/summary", response_model=schemas.GroupSumListModel)
-async def get_group_sum(id: int, page: int | None = 1,
+async def get_group_sum(page: int | None = 1,
                         limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return models.get_sum_group_no_org(page=page, size=limit)

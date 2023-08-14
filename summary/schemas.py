@@ -100,6 +100,9 @@ class GroupSumModel(BaseModel):
     modified_date: datetime | None
     num_targets: int | None
 
+    class Config:
+        orm_mode = True
+
 
 class GroupSumListModel(BaseListModel):
     groups: List[GroupSumModel] = []
