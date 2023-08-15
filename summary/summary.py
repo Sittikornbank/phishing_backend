@@ -659,24 +659,7 @@ def get_campaign_pdf(id: int):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign :{id} not found")
-    if auth.role == Role.SUPER:
-        return export_pdf(camp)
-
-    if auth.role in (Role.ADMIN, Role.AUDITOR):
-        if camp.org_id != auth.organization:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Campaign :{id} not found")
-        return camp
-    elif auth.role in (Role.PAID, Role.GUEST):
-        if camp.user_id != auth.id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Campaign :{id} not found")
-        return camp
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Campaign :{id} not found")
+    return export_pdf(camp)
 
 
 @app.get('/check_pool')
