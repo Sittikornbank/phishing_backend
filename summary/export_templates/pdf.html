@@ -181,6 +181,7 @@
         </table>
 
         {% for target in details %}
+        {% if target.open or if target.click or target.submit %}
         <pdf:nextpage name="_detail" />
         <h3>{{target.firstname}} {{target.lastname}}</h3>
         <p>Department: {{target.department}}</p>
@@ -241,6 +242,7 @@
                 <td style="width:16%;">{{target.payload}}</td>
             </tr>
         </table>
+        {% endif %}
         {% endif %}
         {% endfor %}
         

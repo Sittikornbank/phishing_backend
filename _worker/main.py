@@ -40,8 +40,9 @@ def write_log(ref: str, request: Request):
     file_path = os.path.join(LOG_PATH, f"{ref[:4]}.txt")
     with open(file_path, 'a') as f:
         f.write("------------------------------\n")
-        f.write(datetime.now().isoformat())
+        f.write(datetime.now().isoformat()+"\n")
         f.write("ref :" + ref + "\n")
+        f.write("method :" + request.method + "\n")
         f.write(str(request.headers) + "\n")
         f.write(str(request.client) + "\n")
         f.write("------------------------------\n")

@@ -16,7 +16,8 @@ from schemas import (GroupModel, CampaignListModel, CampaignModel,
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URI')
 
-engine = create_engine(DATABASE_URL, echo=False, pool_size=10, max_overflow=20)
+engine = create_engine(DATABASE_URL, echo=False,
+                       pool_size=10, max_overflow=20, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -805,7 +806,7 @@ def get_campaign_result_by_id_for_export(id: int):
 # query the result and event directly
 
 
-def get_result_event_by_campaign(campaign_id: int, org_id: int):
+def get_result_event_to_export(campaign_id: int, org_id: int):
     # db: Session = next(get_db(org_id))
     with SessionLocal() as db:
         data_list = []

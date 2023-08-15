@@ -1,7 +1,7 @@
 from models import (Campaign,
                     Event,
                     Result,
-                    get_result_event_by_campaign)
+                    get_result_event_to_export)
 import jinja2
 from io import BytesIO
 from xhtml2pdf import pisa
@@ -10,18 +10,23 @@ import os
 
 environment = jinja2.Environment()
 
-
+# email firstname lastname client location open click send report os brower
+# counter {os:0,ip:0, targets:0, opened:0, clicked:0, submitted:0}
+# campaign
+# envelop_sender basu_url re_url capture_cred capture_pass
 input_dict = {'results': [{'email': 'a@b.c', 'open': True, 'click': True,
-                                    'submit': False, 'report': False, 'os': 'windows', 'browser': 'chrome'}
+                                    'submit': False, 'report': False, 'os': 'windows', 'browser': 'chrome'},
+                          {'email': 'a@b.c', 'open': True, 'click': True,
+                           'submit': False, 'report': False, 'os': 'windows', 'browser': 'chrome'}
                           ],
               'details': [
-    {'firstname': 'john', 'lastname': 'carter', 'ip': '0.0.0.0', 'email': 'john.c@c.co', 'location': 'test,test,test',
-        'browser': 'firefox', 'os': 'linux', 'send': '01/01/23', 'open': '02/02/23', 'click': '03/03/23', 'submit': '04/04/23'},
+    {'firstname': 'john', 'lastname': 'carter', 'client': '0.0.0.0', 'email': 'john.c@c.co', 'location': 'test,test,test',
+        'browser': 'firefox', 'os': 'linux', 'send': '01/01/23 00:00:00', 'open': '01/01/23 00:00:00', 'click': '01/01/23 00:00:00', 'submit': '01/01/23 00:00:00'},
 ],
     'browers': [{'name': 'chrome', 'count': 10}, {'name': 'firefox', 'count': 5}],
     'oses': [{'name': 'windows', 'count': 10}, {'name': 'ubuntu', 'count': 5}],
     'ips': [{'name': '0.0.0.0', 'count': 10}, {'name': '127.0.0.1', 'count': 5}],
-    'campaign': {'name': 'test', 'status': 'complete', 'create_at': '01/01/23', 'launch_date': '02/02/23', 'complete_date': '03/03/23'},
+    'campaign': {'name': 'test', 'status': 'complete', 'create_at': '01/01/23 00:00:00', 'launch_date': '01/01/23 00:00:00', 'complete_date': '01/01/23 00:00:00'},
     'envelop_sender': 'es', 'base_url': 'ur', 're_url': 're', 'capture_cred': False, 'capture_pass': False,
     'targets': 10, 'opened': 5, 'clicked': 3, 'submitted': 1}
 
