@@ -829,9 +829,9 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
         ips = {}
         details = []
         try:
-            data = db.query(Result).filter(
+            res = db.query(Result).filter(
                 Result.campaign_id == campaign_id).all()
-            for result in data:
+            for result in res:
 
                 event = None
                 if result.submit_date:
