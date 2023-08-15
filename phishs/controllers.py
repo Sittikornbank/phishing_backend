@@ -156,6 +156,7 @@ async def stop_email(ref_key: str, auth: AuthContext):
 
 async def stop_campaign(campaign_id: int, auth: AuthContext):
     ref_key, campaign = get_campaign_manager_by_id(campaign_id)
+    write_log(ref_key, [f'campagin stop: {campaign_id}'])
     if ref_key and campaign:
         await stop_email(ref_key=ref_key, auth=auth)
         await stop_template(ref_key=ref_key, auth=auth)

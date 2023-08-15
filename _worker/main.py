@@ -32,14 +32,24 @@ def parse_user_agent(user_agent):
     }
 
 
+LOG_PATH = os.path.join(os.path.dirname(__file__), "logs")
+
+
+def write_log(ref: str, request: Request):
+    name = name.strip()
+    file_path = os.path.join(LOG_PATH, f"{ref[:4]}.txt")
+    with open(file_path, 'a') as f:
+        f.write("------------------------------\n")
+        f.write(datetime.now().isoformat())
+        f.write("ref :" + ref + "\n")
+        f.write(str(request.headers) + "\n")
+        f.write(str(request.client) + "\n")
+        f.write("------------------------------\n")
+
+
 async def test(request: Request, ref):
-    file_path = "User.txt"
-    with open(file_path, 'a') as file:
-        file.write("------------------------------\n")
-        file.write(str(request.headers) + "\n")
-        file.write(str(request.client) + "\n")
-        file.write("ref :" + ref + "\n")
-        file.write("------------------------------\n")
+
+    write_log(ref, request)
 
     head = request.headers
 
