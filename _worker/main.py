@@ -36,7 +36,7 @@ LOG_PATH = os.path.join(os.path.dirname(__file__), "logs")
 
 
 def write_log(ref: str, request: Request):
-    name = name.strip()
+    ref = ref.strip()
     file_path = os.path.join(LOG_PATH, f"{ref[:4]}.txt")
     with open(file_path, 'a') as f:
         f.write("------------------------------\n")
