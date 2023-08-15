@@ -10,7 +10,7 @@ import json
 import jinja2
 import sys
 from user_agents import parse
-
+import os
 app = FastAPI()
 
 API = 'http://127.0.0.1:50502/workers'

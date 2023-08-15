@@ -36,7 +36,7 @@ def read_verify_token(token: str):
 def send_verify_email(to_email: str, user_id: int):
     verification_token = create_verify_token(user_id)
     # กำหนดข้อมูลการส่งอีเมล (ผู้ส่ง, ผู้รับ, หัวข้อ, ข้อความ)
-    from_email = '<noreply>@tummainorrr.com'
+    from_email = '<noreply>@zenrestaurants.com'
     subject = 'Verification Email'
     message = 'Thank you for singed up to our service!\n' + \
         f'Click here to verify your Email: http://159.138.237.134:{PORT}/verify?code={verification_token}' + \
@@ -66,7 +66,7 @@ def send_verify_email(to_email: str, user_id: int):
 
 def send_two_factor_email(to_email: str, tid: str, time: datetime):
     # กำหนดข้อมูลการส่งอีเมล (ผู้ส่ง, ผู้รับ, หัวข้อ, ข้อความ)
-    from_email = '<noreply>@tummainorrr.com'
+    from_email = '<noreply>@zenrestaurants.com'
     subject = 'Code for Login'
     message = f'You are trying to login at: {time.strftime("%m/%d/%Y, %H:%M:%S")}\n' + \
         f'Your Code are: {tid}' + \
