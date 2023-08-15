@@ -9,7 +9,7 @@ from auth import AuthContext, get_token, protect_api
 import schemas
 from controllers import (launch_template, process_before_launch,
                          launch_email, stop_template, stop_campaign,
-                         handle_event)
+                         handle_event, write_log)
 import os
 
 load_dotenv()
@@ -63,6 +63,13 @@ async def launch(model: schemas.LaunchModel, _=Depends(protect_api)):
     try:
         res = await launch_email(req=reqm, auth=model.auth)
         if res:
+            targets_str = ["\n"+str(s.dict()) for s in c.targets]
+            write_log(c.ref, [f'launch campaign: {model.campaign.id}',
+                              f'template: {model.campaign.templates_id}',
+                              f'smtp: {model.campaign.smtp_id}',
+                              f'url : {email_temp.base_url}',
+                              f'targets : {targets_str}']
+                      )
             return {'ref_key': c.ref, 'targets': c.targets}
     except HTTPException as e:
         await stop_template(ref_key=c.ref, auth=model.auth)

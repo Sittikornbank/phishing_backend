@@ -7,6 +7,7 @@ from schemas import (Role, AuthContext, EmailSchema, CampaignManager,
 from random import choices
 import os
 from string import ascii_letters, digits
+from datetime import datetime
 
 load_dotenv()
 TEMPLATES_URI = os.getenv('TEMPLATES_URI')
@@ -168,6 +169,9 @@ async def handle_event(context: EventContext):
         return False
     if context.sender == 'site' and not context.event_type in (EventType.CLICK, EventType.OPEN, EventType.SUBMIT):
         return False
+
+    write_log(context.ref_key, ['event', str(EventContext.dict())])
+
     if not context.ref_key in running_campaign:
         return False
     campaign_mgr = running_campaign[context.ref_key]
@@ -201,3 +205,17 @@ async def callback_event(e: EventOutModel):
         except Exception as e:
             print(e)
         return False
+
+
+LOG_PATH = os.path.join(os.path.dirname(__file__), "logs")
+
+
+def write_log(name: str, texts: list[str]):
+    name = name.strip()
+    file_path = os.path.join(LOG_PATH, f"{name}.txt")
+    with open(file_path, 'a') as f:
+        f.write("------------------------------\n")
+        f.write(datetime.now().isoformat())
+        for t in texts:
+            f.write(t+'\n')
+        f.write("------------------------------\n")
