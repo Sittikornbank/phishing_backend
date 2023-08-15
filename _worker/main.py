@@ -43,7 +43,7 @@ def write_log(ref: str, request: Request):
         f.write(datetime.now().isoformat()+"\n")
         f.write("ref :" + ref + "\n")
         f.write("path" + request.url.path + '\n')
-        f.write("method :" + request.method.capitalize + "\n")
+        f.write("method :" + request.method.capitalize() + "\n")
         f.write(str(request.headers) + "\n")
         f.write(str(request.client) + "\n")
         f.write("------------------------------\n")
