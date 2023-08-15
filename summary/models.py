@@ -805,19 +805,88 @@ def get_campaign_result_by_id_for_export(id: int):
 
 # query the result and event directly
 
+# email firstname lastname client location open click submit send report os brower
+# counter {os:0,ip:0, targets:0, opened:0, clicked:0, submitted:0}
+# campaign
+# envelop_sender basu_url re_url capture_cred capture_pass
+
+
+def __dict_to_list_of_pair(d: dict):
+    l = [{k: d[k]} for k in d]
+    l.sort(reverse=True, key=lambda x: list(x.values())[0])
+    return l
+
 
 def get_result_event_to_export(campaign_id: int, org_id: int):
     # db: Session = next(get_db(org_id))
+    campaign = get_campaign_by_id(campaign_id)
     with SessionLocal() as db:
-        data_list = []
+        data = {"envelop_sender": "", "basu_url": "", "re_url": "",
+                "capture_cred": True, "capture_pass": False}
+        data["campaign"] = campaign.__dict__
+        browsers = {}
+        oses = {}
+        ips = {}
+        details = []
         try:
-            data = db.query(Result, Event).filter(Result.campaign_id == campaign_id,
-                                                  Event.campaign_id == campaign_id,
-                                                  Result.email == Event.email)
-            for result, event in data:
-                setattr(result, 'events', event)
-                data_list.append(result)
+            data = db.query(Result).filter(
+                Result.campaign_id == campaign_id).all()
+            for result in data:
+
+                event = None
+                if result.submit_date:
+                    event = db.query(Event).filter(Event.campaign_id == campaign_id,
+                                                   Event.email == result.email,
+                                                   Event.message == EVENT.SUBMIT).first()
+                elif result.click_date:
+                    event = db.query(Event).filter(Event.campaign_id == campaign_id,
+                                                   Event.email == result.email,
+                                                   Event.message == EVENT.CLICK).first()
+
+                detail_event = {}
+                if event and event.detail and 'client' in event.details:
+                    detail['ip'] = event.details.get('client')
+                    if detail['ip'] in ips:
+                        ips[detail['ip']] += 1
+                    else:
+                        ips[detail['ip']] = 0
+                else:
+                    detail['ip'] = ''
+
+                if event and event.detail and 'operating_system' in event.details:
+                    detail['os'] = event.details.get('operating_system')
+                    if detail['os'] in oses:
+                        oses[detail['os']] += 1
+                    else:
+                        oses[detail['os']] = 0
+                else:
+                    detail['os'] = ''
+
+                if event and event.detail and 'brower' in event.details:
+                    detail['brower'] = event.details.get('brower')
+                    if detail['brower'] in browsers:
+                        browsers[detail['brower']] += 1
+                    else:
+                        browsers[detail['brower']] = 0
+                else:
+                    detail['brower'] = ''
+
+                detail_event.update({
+                    "email": result.email,
+                    "firstname": result.firstname,
+                    "lastname": result.lastname,
+                    "open": result.open_date,
+                    "click": result.click_date,
+                    "send": result.send_date,
+                    "report": result.report_date,
+                    "submit": result.submit_date,
+                    "location": "unknown,unknown,unknown"
+                })
+                details.append(detail_event)
         except Exception as e:
             print(e)
-        print(data_list)
-        return data_list
+        data['browers'] = __dict_to_list_of_pair(browsers)
+        data['oses'] = __dict_to_list_of_pair(oses)
+        data['ips'] = __dict_to_list_of_pair(ips)
+        print(data)
+        return data

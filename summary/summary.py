@@ -560,7 +560,7 @@ def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
 
 # @app.get("/campaigns/{id}/results/export")
 @app.get("/campaigns/{id}/results/export", responses={
-    200: {"content": {"application/msexcel": {}}}
+    200: {"content": {"application/msexcel": {}}, "Content-Disposition": f'filename="export_{id}.xlsx"'}
 })
 # def get_results(id: int, auth: AuthContext = Depends(auth_token)):
 def get_results(id: int):
@@ -651,9 +651,9 @@ def get_results(id: int):
 
 
 @app.get("/campaigns/{id}/results/export_pdf", responses={
-    200: {"content": {"application/pdf": {}}}
+    200: {"content": {"application/pdf": {}}, "Content-Disposition": f'filename="export_{id}.pdf"'}
 })
-def get_campaign_pdf(id: int, auth: AuthContext = Depends(auth_token)):
+def get_campaign_pdf(id: int):
     camp = models.get_campaign_by_id(id)
     if not camp:
         raise HTTPException(

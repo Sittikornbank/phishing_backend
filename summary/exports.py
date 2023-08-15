@@ -10,23 +10,20 @@ import os
 
 environment = jinja2.Environment()
 
-# email firstname lastname client location open click send report os brower
-# counter {os:0,ip:0, targets:0, opened:0, clicked:0, submitted:0}
-# campaign
-# envelop_sender basu_url re_url capture_cred capture_pass
+
 input_dict = {'results': [{'email': 'a@b.c', 'open': True, 'click': True,
                                     'submit': False, 'report': False, 'os': 'windows', 'browser': 'chrome'},
                           {'email': 'a@b.c', 'open': True, 'click': True,
                            'submit': False, 'report': False, 'os': 'windows', 'browser': 'chrome'}
                           ],
               'details': [
-    {'firstname': 'john', 'lastname': 'carter', 'client': '0.0.0.0', 'email': 'john.c@c.co', 'location': 'test,test,test',
+    {'firstname': 'john', 'lastname': 'carter', 'ip': '0.0.0.0', 'email': 'john.c@c.co', 'location': 'test,test,test',
         'browser': 'firefox', 'os': 'linux', 'send': '01/01/23 00:00:00', 'open': '01/01/23 00:00:00', 'click': '01/01/23 00:00:00', 'submit': '01/01/23 00:00:00'},
 ],
     'browers': [{'name': 'chrome', 'count': 10}, {'name': 'firefox', 'count': 5}],
     'oses': [{'name': 'windows', 'count': 10}, {'name': 'ubuntu', 'count': 5}],
     'ips': [{'name': '0.0.0.0', 'count': 10}, {'name': '127.0.0.1', 'count': 5}],
-    'campaign': {'name': 'test', 'status': 'complete', 'create_at': '01/01/23 00:00:00', 'launch_date': '01/01/23 00:00:00', 'complete_date': '01/01/23 00:00:00'},
+    'campaign': {'name': 'test', 'status': 'complete', 'create_at': '01/01/23 00:00:00', 'launch_date': '01/01/23 00:00:00', 'complete_date': '03/03/23'},
     'envelop_sender': 'es', 'base_url': 'ur', 're_url': 're', 'capture_cred': False, 'capture_pass': False,
     'targets': 10, 'opened': 5, 'clicked': 3, 'submitted': 1}
 
@@ -35,10 +32,10 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(
     __file__), "export_templates/pdf.html")
 
 
-def convert_html_to_pdf():
+def convert_html_to_pdf(data: dict):
     output = BytesIO()
     temp = environment.get_template(TEMPLATE_DIR)
-    rendered = temp.render(input_dict)
+    rendered = temp.render(data)
     # convert HTML to PDF
     pisa_status = pisa.CreatePDF(
         rendered,                # the HTML to convert
@@ -51,6 +48,6 @@ def convert_html_to_pdf():
 
 
 def export_pdf(campaign: Campaign):
-    get_result_event_by_campaign(
+    res = get_result_event_to_export(
         campaign_id=campaign.id, org_id=campaign.org_id)
-    return convert_html_to_pdf()
+    return convert_html_to_pdf(res)
