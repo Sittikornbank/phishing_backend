@@ -803,20 +803,15 @@ def get_campaign_result_by_id_for_export(id: int):
             print(e)
         return
 
-# query the result and event directly
 
-# email firstname lastname client location open click submit send report os brower
-# counter {os:0,ip:0, targets:0, opened:0, clicked:0, submitted:0}
-# campaign
-# envelop_sender basu_url re_url capture_cred capture_pass
-
-
+# dict to sorted list of key-value pair, sort max value
 def __dict_to_list_of_pair(d: dict):
     l = [{k: d[k]} for k in d]
     l.sort(reverse=True, key=lambda x: list(x.values())[0])
     return l
 
 
+# query the result and event directly
 def get_result_event_to_export(campaign_id: int, org_id: int):
     # db: Session = next(get_db(org_id))
     campaign = get_campaign_by_id(campaign_id)
@@ -828,10 +823,27 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
         oses = {}
         ips = {}
         details = []
+        targets = 0
+        opened = 0
+        clicked = 0
+        submitted = 0
+        sent = 0
+        reported = 0
         try:
             res = db.query(Result).filter(
                 Result.campaign_id == campaign_id).all()
+            targets = len(res)
             for result in res:
+                if result.open_date:
+                    opened += 1
+                if result.click_date:
+                    clicked += 1
+                if result.send_date:
+                    sent += 1
+                if result.report_date:
+                    reported += 1
+                if result.submit_date:
+                    submitted += 1
 
                 event = None
                 if result.submit_date:
@@ -885,6 +897,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 details.append(detail_event)
         except Exception as e:
             print(e)
+        data['details'] = details
         data['browers'] = __dict_to_list_of_pair(browsers)
         data['oses'] = __dict_to_list_of_pair(oses)
         data['ips'] = __dict_to_list_of_pair(ips)

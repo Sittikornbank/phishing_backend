@@ -7,9 +7,7 @@ from io import BytesIO
 from xhtml2pdf import pisa
 import os
 # import pandas as pd
-TEMPLATE_DIR = os.path.join(os.path.dirname(
-    __file__), "export_templates/pdf.html")
-
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "export_templates")
 environment = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATE_DIR))
 
 
@@ -32,7 +30,7 @@ input_dict = {'results': [{'email': 'a@b.c', 'open': True, 'click': True,
 
 def convert_html_to_pdf(data: dict):
     output = BytesIO()
-    temp = environment.get_template()
+    temp = environment.get_template('pdf.html')
     rendered = temp.render(data)
     # convert HTML to PDF
     pisa_status = pisa.CreatePDF(
