@@ -167,7 +167,7 @@
                 <td style="width:13%;color:white;"><b>OS</b></td>
                 <td style="width:13%;color:white;"><b>Browser</b></td>
             </tr>
-            {% for res in results %}
+            {% for res in details %}
             <tr style="height: 40pt; vertical-align:center; background-color:{{loop.cycle("#efebe9","#c9c4c1")}};">
                 <td style="width:20%;">{{res.email}}</td>
                 <td style="width:13%;">{% if res.open %}Yes{% else %}No{% endif %}</td>
