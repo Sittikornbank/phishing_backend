@@ -181,69 +181,69 @@
         </table>
 
         {% for target in details %}
-        {% if target.open or if target.click or target.submit %}
-        <pdf:nextpage name="_detail" />
-        <h3>{{target.firstname}} {{target.lastname}}</h3>
-        <p>Department: {{target.department}}</p>
-        <p>Email: {{target.email}}</p>
-        <p>Email send: {{target.send}}</p>
+            {% if target.open or if target.click or target.submit %}
+            <pdf:nextpage name="_detail" />
+            <h3>{{target.firstname}} {{target.lastname}}</h3>
+            <p>Department: {{target.department}}</p>
+            <p>Email: {{target.email}}</p>
+            <p>Email send: {{target.send}}</p>
 
-        {% if target.open %}
-        <p>Email Previews</p>
-        <table  style="display: block; text-align:left; padding-left:2pt">
-            <tr style="height: 40pt; vertical-align:center;  background-color:blue">
-                <td style="width:50%;color:white;"><b>Time</b></td>
-                <td style="width:50%;color:white;"></td>
-            </tr>
-            <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
-                <td style="width:50%;">{{target.open}}</td>
-                <td style="width:50%;"></td>
-            </tr>
-        </table>
-        {% endif %}
+                {% if target.open %}
+                <p>Email Previews</p>
+                <table  style="display: block; text-align:left; padding-left:2pt">
+                    <tr style="height: 40pt; vertical-align:center;  background-color:blue">
+                        <td style="width:50%;color:white;"><b>Time</b></td>
+                        <td style="width:50%;color:white;"></td>
+                    </tr>
+                    <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                        <td style="width:50%;">{{target.open}}</td>
+                        <td style="width:50%;"></td>
+                    </tr>
+                </table>
+                {% endif %}
 
-        {% if target.click %}
-        <p>Email Link Clicked</p>
-        <table  style="display: block; text-align:left; padding-left:2pt">
-            <tr style="height: 40pt; vertical-align:center;  background-color:blue">
-                <td style="width:20%;color:white;"><b>Time</b></td>
-                <td style="width:20%;color:white;"><b>IP</b></td>
-                <td style="width:20%;color:white;"><b>Location</b></td>
-                <td style="width:20%;color:white;"><b>Browser</b></td>
-                <td style="width:20%;color:white;"><b>Operating System</b></td>
-            </tr>
-            <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
-                <td style="width:20%;">{{target.click}}</td>
-                <td style="width:20%;">{{target.ip}}</td>
-                <td style="width:20%;">{{target.location}}</td>
-                <td style="width:20%;">{{target.browser}}</td>
-                <td style="width:20%;">{{target.os}}</td>
-            </tr>
-        </table>
-        {% endif %}
+                {% if target.click %}
+                <p>Email Link Clicked</p>
+                <table  style="display: block; text-align:left; padding-left:2pt">
+                    <tr style="height: 40pt; vertical-align:center;  background-color:blue">
+                        <td style="width:20%;color:white;"><b>Time</b></td>
+                        <td style="width:20%;color:white;"><b>IP</b></td>
+                        <td style="width:20%;color:white;"><b>Location</b></td>
+                        <td style="width:20%;color:white;"><b>Browser</b></td>
+                        <td style="width:20%;color:white;"><b>Operating System</b></td>
+                    </tr>
+                    <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                        <td style="width:20%;">{{target.click}}</td>
+                        <td style="width:20%;">{{target.ip}}</td>
+                        <td style="width:20%;">{{target.location}}</td>
+                        <td style="width:20%;">{{target.browser}}</td>
+                        <td style="width:20%;">{{target.os}}</td>
+                    </tr>
+                </table>
+                {% endif %}
 
-        {% if target.submit %}
-        <p>Data Captured</p>
-        <table  style="display: block; text-align:left; padding-left:2pt">
-            <tr style="height: 40pt; vertical-align:center;  background-color:blue">
-                <td style="width:16%;color:white;"><b>Time</b></td>
-                <td style="width:16%;color:white;"><b>IP</b></td>
-                <td style="width:16%;color:white;"><b>Location</b></td>
-                <td style="width:16%;color:white;"><b>Browser</b></td>
-                <td style="width:16%;color:white;"><b>Operating System</b></td>
-                <td style="width:16%;color:white;"><b>Data Captured</b></td>
-            </tr>
-            <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
-                <td style="width:16%;">{{target.click}}</td>
-                <td style="width:16%;">{{target.ip}}</td>
-                <td style="width:16%;">{{target.location}}</td>
-                <td style="width:16%;">{{target.browser}}</td>
-                <td style="width:16%;">{{target.os}}</td>
-                <td style="width:16%;">{{target.payload}}</td>
-            </tr>
-        </table>
-        {% endif %}
-        {% endif %}
+                {% if target.submit %}
+                <p>Data Captured</p>
+                <table  style="display: block; text-align:left; padding-left:2pt">
+                    <tr style="height: 40pt; vertical-align:center;  background-color:blue">
+                        <td style="width:16%;color:white;"><b>Time</b></td>
+                        <td style="width:16%;color:white;"><b>IP</b></td>
+                        <td style="width:16%;color:white;"><b>Location</b></td>
+                        <td style="width:16%;color:white;"><b>Browser</b></td>
+                        <td style="width:16%;color:white;"><b>Operating System</b></td>
+                        <td style="width:16%;color:white;"><b>Data Captured</b></td>
+                    </tr>
+                    <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                        <td style="width:16%;">{{target.click}}</td>
+                        <td style="width:16%;">{{target.ip}}</td>
+                        <td style="width:16%;">{{target.location}}</td>
+                        <td style="width:16%;">{{target.browser}}</td>
+                        <td style="width:16%;">{{target.os}}</td>
+                        <td style="width:16%;">{{target.payload}}</td>
+                    </tr>
+                </table>
+                {% endif %}
+            {% endif %}
         {% endfor %}
         
         <pdf:nextpage name="_stat" />
