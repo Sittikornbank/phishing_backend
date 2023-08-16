@@ -38,8 +38,8 @@ class CampaignSchema(BaseModel):
     user_id: int = 0
     org_id: int = 0
     name: str = ""
-    create_date: datetime = datetime.now()
-    complate: datetime | None
+    created_date: datetime = datetime.now()
+    completed_date: datetime | None
     templates_id: int | None = None
     status: Status = Status.IDLE
     smtp_id: int | None = None

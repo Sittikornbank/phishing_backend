@@ -118,8 +118,8 @@ class CampaignModel(BaseModel):
     user_id: int | None = None
     org_id: int | None = None
     name: str = Field(min_length=1, max_length=128)
-    create_date: datetime = datetime.now()
-    complate: datetime | None = None
+    created_date: datetime = datetime.now()
+    completed_date: datetime | None = None
     templates_id: int
     status: Status = Status.IDLE
     smtp_id: int
@@ -144,12 +144,12 @@ class CampaignDisplayModel(BaseModel):
     user_id: int | None = None
     org_id: int | None = None
     name: str | None = None
-    create_date: datetime | None = None
+    created_date: datetime | None = None
     templates_id: int | None = None
     status: str | None = None
     smtp_id: int | None = None
     group_id: int | None = None
-    complate: datetime | None = None
+    completed_date: datetime | None = None
     launch_date: datetime | None = None
     send_by_date: datetime | None = None
 
@@ -177,7 +177,7 @@ class Summary(BaseModel):
 class CampaignSummaryModel(BaseModel):
     id: int | None = None
     name: str | None = None
-    create_date: datetime | None = None
+    created_date: datetime | None = None
     status: str | None = None
     stats: Summary | None = None
 

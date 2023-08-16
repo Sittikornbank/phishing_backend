@@ -515,7 +515,7 @@ def get_all_campaigns_sum(page: int | None = None, size: int | None = None):
     campaigns = [
         CampaignSummaryModel(id=c.id,
                              name=c.name,
-                             create_date=c.create_date,
+                             created_date=c.created_date,
                              status=c.status,
                              stats=get_campaign_summary(c.id, org_id=c.org_id, group_id=c.group_id))
 
@@ -586,7 +586,7 @@ def create_campaign(cam_in: CampaignModel):
                 user_id=cam_in.user_id,
                 org_id=cam_in.org_id,
                 name=cam_in.name,
-                created_date=cam_in.create_date,
+                created_date=cam_in.created_date,
                 completed_date=None,
                 templates_id=cam_in.templates_id,
                 group_id=cam_in.group_id,

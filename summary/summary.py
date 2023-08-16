@@ -285,7 +285,7 @@ async def get_campaign(id: int, auth: AuthContext = Depends(auth_token)):
 
 @app.post("/campaigns", response_model=schemas.CampaignDisplayModel)
 async def create_campaign(campaign: schemas.CampaignModel, auth: AuthContext = Depends(auth_token)):
-    campaign.create_date = datetime.now()
+    campaign.created_date = datetime.now()
     if auth.role == Role.SUPER:
         if not campaign.user_id:
             campaign.user_id = auth.id
