@@ -143,12 +143,13 @@
         <br> 
         <h3>High Level Results </h3>
         <p>Total Targets: {{targets}}</p>
+        <p>Total Email sent: {{sent}}</p>
         <br>
         <p>The following totals indicate how many targets participated in each event type: </p>
         <p>Individuals Who Opened Email: {{opened}}</p>
         <p>Individuals Who Clicked: {{clicked}}</p>
         <p>Individuals Who Submitted: {{submitted}}</p>
-        <p>Individuals Who Reported: -</p>
+        <p>Individuals Who Reported: {{reported}}</p>
         <br>
 
         <pdf:nextpage name="_event" />
@@ -181,7 +182,7 @@
         </table>
 
         {% for target in details %}
-            
+            {% if target.open or target.click or target.submit %}
             <pdf:nextpage name="_detail" />
             <h3>{{target.firstname}} {{target.lastname}}</h3>
             <p>Department: {{target.department}}</p>
@@ -244,6 +245,7 @@
                 </table>
                 {% endif %}
                 
+            {% endif %}
         {% endfor %}
         
         <pdf:nextpage name="_stat" />
