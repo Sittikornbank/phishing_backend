@@ -883,7 +883,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 else:
                     detail['brower'] = ''
 
-                detail_event.update({
+                detail.update({
                     "email": result.email,
                     "firstname": result.firstname,
                     "lastname": result.lastname,
