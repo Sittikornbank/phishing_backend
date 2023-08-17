@@ -655,6 +655,7 @@ def get_results(id: int):
 })
 def get_campaign_pdf(id: int):
     camp = models.get_campaign_by_id(id)
+
     if not camp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
