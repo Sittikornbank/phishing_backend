@@ -171,7 +171,7 @@ async def handle_event(context: EventContext):
     if context.sender == 'site' and not context.event_type in (EventType.CLICK, EventType.OPEN, EventType.SUBMIT):
         return False
 
-    write_log(context.ref_key, ['event', str(EventContext.dict())])
+    write_log(context.ref_key, ['event', str(context.dict())])
 
     if not context.ref_key in running_campaign:
         return False
