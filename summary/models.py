@@ -833,6 +833,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
             res = db.query(Result).filter(
                 Result.campaign_id == campaign_id).all()
             targets = len(res)
+            print(res)
             for result in res:
                 if result.open_date:
                     opened += 1
@@ -913,11 +914,11 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
         data['browers'] = __dict_to_list_of_pair(browsers)
         data['oses'] = __dict_to_list_of_pair(oses)
         data['ips'] = __dict_to_list_of_pair(ips)
-        data['targets'] = 0
-        data['opened'] = 0
-        data['clicked'] = 0
-        data['submitted'] = 0
-        data['sent'] = 0
-        data['reported'] = 0
+        data['targets'] = int(targets)
+        data['opened'] = int(opened)
+        data['clicked'] = int(clicked)
+        data['submitted'] = int(submitted)
+        data['sent'] = int(sent)
+        data['reported'] = int(reported)
         print(data)
         return data
