@@ -6,3 +6,5 @@
 */venv
 */result
 */logs
+venv/*
+venv

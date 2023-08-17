@@ -856,7 +856,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                                                    Event.message == EVENT.CLICK).first()
 
                 detail_event = {}
-                if event and event.detail and 'client' in event.details:
+                if event and event.details and 'client' in event.details:
                     detail['ip'] = event.details.get('client')
                     if detail['ip'] in ips:
                         ips[detail['ip']] += 1
