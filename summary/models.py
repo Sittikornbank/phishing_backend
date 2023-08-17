@@ -855,7 +855,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                                                    Event.email == result.email,
                                                    Event.message == EVENT.CLICK).first()
 
-                detail_event = {}
+                detail = {}
                 if event and event.details and 'client' in event.details:
                     detail['ip'] = event.details.get('client')
                     if detail['ip'] in ips:
@@ -894,7 +894,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                     "submit": result.submit_date,
                     "location": "unknown,unknown,unknown"
                 })
-                details.append(detail_event)
+                details.append(detail)
         except Exception as e:
             print(e)
         data['details'] = details
