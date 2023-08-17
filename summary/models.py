@@ -874,14 +874,26 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 else:
                     detail['os'] = ''
 
-                if event and event.details and 'brower' in event.details:
-                    detail['brower'] = event.details.get('brower')
-                    if detail['brower'] in browsers:
-                        browsers[detail['brower']] += 1
+                if event and event.details and 'browser' in event.details:
+                    detail['browser'] = event.details.get('browser')
+                    if detail['browser'] in browsers:
+                        browsers[detail['browser']] += 1
                     else:
-                        browsers[detail['brower']] = 1
+                        browsers[detail['browser']] = 1
                 else:
-                    detail['brower'] = ''
+                    detail['browser'] = ''
+
+                if event and event.details:
+                    t = {}
+                    if 'email' in event.details:
+                        t['email'] = event.details['email']
+                    if 'username' in event.details:
+                        t['username'] = event.details['username']
+                    if 'password' in event.details:
+                        t['password'] = event.details['password']
+                    if 'etc' in event.details:
+                        t['etc'] = event.details['etc']
+                    detail['playload'] = str(t)
 
                 detail.update({
                     "email": result.email,
