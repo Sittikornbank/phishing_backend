@@ -865,7 +865,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 else:
                     detail['ip'] = ''
 
-                if event and event.detail and 'operating_system' in event.details:
+                if event and event.details and 'operating_system' in event.details:
                     detail['os'] = event.details.get('operating_system')
                     if detail['os'] in oses:
                         oses[detail['os']] += 1
@@ -874,7 +874,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 else:
                     detail['os'] = ''
 
-                if event and event.detail and 'brower' in event.details:
+                if event and event.details and 'brower' in event.details:
                     detail['brower'] = event.details.get('brower')
                     if detail['brower'] in browsers:
                         browsers[detail['brower']] += 1
