@@ -806,8 +806,8 @@ def get_campaign_result_by_id_for_export(id: int):
 
 # dict to sorted list of key-value pair, sort max value
 def __dict_to_list_of_pair(d: dict):
-    l = [{k: d[k]} for k in d]
-    l.sort(reverse=True, key=lambda x: list(x.values())[0])
+    l = [{'name': k, 'count': d[k]} for k in d]
+    l.sort(reverse=True, key=lambda x: x['count'])
     return l
 
 
@@ -861,7 +861,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                     if detail['ip'] in ips:
                         ips[detail['ip']] += 1
                     else:
-                        ips[detail['ip']] = 0
+                        ips[detail['ip']] = 1
                 else:
                     detail['ip'] = ''
 
@@ -870,7 +870,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                     if detail['os'] in oses:
                         oses[detail['os']] += 1
                     else:
-                        oses[detail['os']] = 0
+                        oses[detail['os']] = 1
                 else:
                     detail['os'] = ''
 
@@ -879,7 +879,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                     if detail['brower'] in browsers:
                         browsers[detail['brower']] += 1
                     else:
-                        browsers[detail['brower']] = 0
+                        browsers[detail['brower']] = 1
                 else:
                     detail['brower'] = ''
 
@@ -901,5 +901,11 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
         data['browers'] = __dict_to_list_of_pair(browsers)
         data['oses'] = __dict_to_list_of_pair(oses)
         data['ips'] = __dict_to_list_of_pair(ips)
+        data['targets'] = 0
+        data['opened'] = 0
+        data['clicked'] = 0
+        data['submitted'] = 0
+        data['sent'] = 0
+        data['reported'] = 0
         print(data)
         return data
