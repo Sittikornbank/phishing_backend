@@ -383,6 +383,8 @@ async def delete_campaign(id: int, auth: AuthContext = Depends(auth_token)):
 
 @app.get("/campaigns/{id}/graphs")
 def get_graphs_by_id(id: int, sampling: int = 3600, auth: AuthContext = Depends(auth_token)):
+    if sampling < 1:
+        sampling = 1
     auth_permission(auth, roles=(Role.SUPER,))
     cate = models.get_data_for_cate_graph(id)
     timelines = {}
@@ -395,7 +397,7 @@ def get_graphs_by_id(id: int, sampling: int = 3600, auth: AuthContext = Depends(
     time_axis = []
     for i in range(n):
         time_axis.append(datetime.fromtimestamp(
-            events[0].timestamp + sampling*i).strftime('%m/%d/%y,%H:%M'))
+            events[0].timestamp + sampling*i).strftime('%m/%d/%y,%H:%M:%S'))
     timelines['x_axis'] = time_axis
     timelines['send'] = [0]*n
     timelines['open'] = [0]*n
