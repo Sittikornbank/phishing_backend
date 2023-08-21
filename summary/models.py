@@ -956,10 +956,47 @@ def get_data_for_cate_graph(id: int):
     return cate_graph
 
 
+def get_data_for_cate_graph_all():
+    cate_graph = {}
+    with SessionLocal() as db:
+        try:
+            results = db.query(Result.department, func.count()).filter(
+                Result.send_date != None).group_by(Result.department)
+            cate_graph['send'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.open_date != None).group_by(Result.department)
+            cate_graph['open'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.click_date != None).group_by(Result.department)
+            cate_graph['click'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.submit_date != None).group_by(Result.department)
+            cate_graph['submit'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.report_date != None).group_by(Result.department)
+            cate_graph['report'] = cate_graph_res(results)
+        except Exception as e:
+            print(e)
+            return
+    return cate_graph
+
+
 def get_data_for_time_graph(id: int):
     with SessionLocal() as db:
         try:
             events = db.query(Event).filter(Event.campaign_id == id).all()
+            for e in events:
+                setattr(e, 'timestamp', e.time.timestamp())
+            return events
+        except Exception as e:
+            print(e)
+            return []
+
+
+def get_data_for_time_graph_all():
+    with SessionLocal() as db:
+        try:
+            events = db.query(Event).all()
             for e in events:
                 setattr(e, 'timestamp', e.time.timestamp())
             return events

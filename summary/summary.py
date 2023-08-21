@@ -252,8 +252,41 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 25, auth: Auth
 
 
 @app.get('/campaigns/graphs')
-def get_all_graph():
-    pass
+def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token)):
+    if sampling < 1:
+        sampling = 1
+    auth_permission(auth, roles=(Role.SUPER,))
+    cate = models.get_data_for_cate_graph_all()
+    timelines = {}
+
+    events = models.get_data_for_time_graph_all()
+    if not events:
+        return {'hist': cate, 'ts': timelines}
+    delta = events[-1].timestamp - events[0].timestamp
+    n = int(delta // sampling)+1
+    time_axis = []
+    for i in range(n):
+        time_axis.append(datetime.fromtimestamp(
+            events[0].timestamp + sampling*i).strftime('%m/%d/%y,%H:%M:%S'))
+    timelines['x_axis'] = time_axis
+    timelines['send'] = [0]*n
+    timelines['open'] = [0]*n
+    timelines['click'] = [0]*n
+    timelines['submit'] = [0]*n
+    timelines['report'] = [0]*n
+    for e in events:
+        i = int((e.timestamp-events[0].timestamp)//sampling)
+        if e.message == schemas.EVENT.SEND:
+            timelines['send'][i] += 1
+        if e.message == schemas.EVENT.OPEN:
+            timelines['open'][i] += 1
+        if e.message == schemas.EVENT.CLICK:
+            timelines['click'][i] += 1
+        if e.message == schemas.EVENT.SUBMIT:
+            timelines['submit'][i] += 1
+        if e.message == schemas.EVENT.REPORT:
+            timelines['report'][i] += 1
+    return {'hist': cate, 'ts': timelines}
 
 
 @app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
