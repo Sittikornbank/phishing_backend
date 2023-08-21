@@ -252,6 +252,10 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 25, auth: Auth
 
 
 @app.get('/campaigns/graphs')
+def get_all_graph():
+    pass
+
+
 @app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
 def get_campaigns_sum(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
