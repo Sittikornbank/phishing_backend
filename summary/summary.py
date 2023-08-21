@@ -251,6 +251,7 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 25, auth: Auth
     return models.get_campaigns_by_user(id=auth.id, page=page, size=limit)
 
 
+@app.get('/campaigns/graphs')
 @app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
 def get_campaigns_sum(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
@@ -378,6 +379,42 @@ async def delete_campaign(id: int, auth: AuthContext = Depends(auth_token)):
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Campaign not found :{id}")
+
+
+@app.get("/campaigns/{id}/graphs")
+def get_graphs_by_id(id: int, sampling: int = 3600, auth: AuthContext = Depends(auth_token)):
+    auth_permission(auth, roles=(Role.SUPER,))
+    cate = models.get_data_for_cate_graph(id)
+    timelines = {}
+
+    events = models.get_data_for_time_graph(id)
+    if not events:
+        return {'hist': cate, 'ts': timelines}
+    delta = events[-1].timestamp - events[0].timestamp
+    n = int(delta // sampling)+1
+    time_axis = []
+    for i in range(n):
+        time_axis.append(datetime.fromtimestamp(
+            events[0].timestamp + sampling*i).strftime('%m/%d/%y,%H:%M'))
+    timelines['x_axis'] = time_axis
+    timelines['send'] = [0]*n
+    timelines['open'] = [0]*n
+    timelines['click'] = [0]*n
+    timelines['submit'] = [0]*n
+    timelines['report'] = [0]*n
+    for e in events:
+        i = int((e.timestamp-events[0].timestamp)//sampling)
+        if e.message == schemas.EVENT.SEND:
+            timelines['send'][i] += 1
+        if e.message == schemas.EVENT.OPEN:
+            timelines['open'][i] += 1
+        if e.message == schemas.EVENT.CLICK:
+            timelines['click'][i] += 1
+        if e.message == schemas.EVENT.SUBMIT:
+            timelines['submit'][i] += 1
+        if e.message == schemas.EVENT.REPORT:
+            timelines['report'][i] += 1
+    return {'hist': cate, 'ts': timelines}
 
 
 @app.get("/campaigns/{id}/results", response_model=schemas.CampaignResultModel)

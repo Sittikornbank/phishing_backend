@@ -922,3 +922,47 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
         data['reported'] = int(reported)
         print(data)
         return data
+
+
+def cate_graph_res(results):
+    dep = {}
+    for res in results:
+        dep[str(res._data[0])] = res._data[1]
+    return dep
+
+
+def get_data_for_cate_graph(id: int):
+    cate_graph = {}
+    with SessionLocal() as db:
+        try:
+            results = db.query(Result.department, func.count()).filter(
+                Result.campaign_id == id, Result.send_date != None).group_by(Result.department)
+            cate_graph['send'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.campaign_id == id, Result.open_date != None).group_by(Result.department)
+            cate_graph['open'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.campaign_id == id, Result.click_date != None).group_by(Result.department)
+            cate_graph['click'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.campaign_id == id, Result.submit_date != None).group_by(Result.department)
+            cate_graph['submit'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.campaign_id == id, Result.report_date != None).group_by(Result.department)
+            cate_graph['report'] = cate_graph_res(results)
+        except Exception as e:
+            print(e)
+            return
+    return cate_graph
+
+
+def get_data_for_time_graph(id: int):
+    with SessionLocal() as db:
+        try:
+            events = db.query(Event).filter(Event.campaign_id == id).all()
+            for e in events:
+                setattr(e, 'timestamp', e.time.timestamp())
+            return events
+        except Exception as e:
+            print(e)
+            return []
