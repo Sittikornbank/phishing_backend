@@ -635,8 +635,8 @@ def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
 
 
 # @app.get("/campaigns/{id}/results/export")
-@app.get("/campaigns/{id}/results/export", responses={
-    200: {"content": {"application/msexcel": {}, "Content-Disposition": 'inline; filename="export.xlxs"'}}
+@app.get("/campaigns/{id}/results/export.xlsx", responses={
+    200: {"content": {"application/msexcel": {}, "Content-Disposition": 'inline; filename="export.xlsx"'}}
 })
 # def get_results(id: int, auth: AuthContext = Depends(auth_token)):
 def get_results(id: int):
