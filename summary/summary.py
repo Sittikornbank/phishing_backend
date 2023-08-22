@@ -242,7 +242,7 @@ async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
 
 
 @app.get("/campaigns", response_model=schemas.CampaignListModel)
-async def get_campaigns(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+async def get_campaigns(page: int | None = 1, limit: int | None = 999, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return models.get_all_campaigns(page, limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
@@ -290,7 +290,7 @@ def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token))
 
 
 @app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
-def get_campaigns_sum(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+def get_campaigns_sum(page: int | None = 1, limit: int | None = 999, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return models.get_all_campaigns_sum(page=page, size=limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
