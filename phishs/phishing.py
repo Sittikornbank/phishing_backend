@@ -70,7 +70,10 @@ async def launch(model: schemas.LaunchModel, _=Depends(protect_api)):
                               f'url : {email_temp.base_url}',
                               f'targets : {targets_str}']
                       )
-            return {'ref_key': c.ref, 'targets': c.targets}
+            return {'ref_key': c.ref, 'targets': c.targets, 'payload': {'envelope_sender': email_temp.envelope_sender, 'base_url': email_temp.base_url,
+                                                                        're_url': email_temp.redirect_url, 'capture_cred': email_temp.capture_credentials,
+                                                                        'capture_pass': email_temp.capture_passwords}}
+
     except HTTPException as e:
         await stop_template(ref_key=c.ref, auth=model.auth)
         raise e

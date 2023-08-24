@@ -458,8 +458,11 @@ def start_landing_campaign(c: schemas.LaunchingModel, _=Depends(protect_api)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Landing Task with ref_key already existed."
         )
-    url = models.get_phishsite_by_id(site.phishsite_id).uri
-    setattr(mail, "base_url", url)
+    phishsite = models.get_phishsite_by_id(site.phishsite_id)
+    setattr(mail, "base_url", phishsite.uri)
+    setattr(mail, "redirect_url", site.redirect_url)
+    setattr(mail, "capture_credentials", site.capture_credentials)
+    setattr(mail, "capture_passwords", site.capture_passwords)
     return mail
 
 

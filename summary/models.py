@@ -816,8 +816,18 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
     # db: Session = next(get_db(org_id))
     campaign = get_campaign_by_id(campaign_id)
     with SessionLocal() as db:
-        data = {"envelop_sender": "", "basu_url": "", "re_url": "",
-                "capture_cred": True, "capture_pass": False}
+        try:
+            res = db.query(Event).filter(
+                Event.campaign_id == campaign_id, Event.message == EVENT.LAUNCH).first()
+            if res == None:
+                raise Exception()
+            data = {"envelop_sender": res.details.get('envelop_sender'), "basu_url": res.details.get('basu_url'),
+                    "re_url": res.details.get('re_url'), "capture_cred": res.details.get('capture_cred'),
+                    "capture_pass": res.details.get('capture_pass')}
+        except Exception as e:
+            print(e)
+            data = {"envelop_sender": "sss", "basu_url": "", "re_url": "",
+                    "capture_cred": None, "capture_pass": None}
         data["campaign"] = campaign.__dict__
         browsers = {}
         oses = {}

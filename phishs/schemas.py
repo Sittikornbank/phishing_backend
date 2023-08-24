@@ -55,6 +55,9 @@ class EmailSchema(BaseModel):
     html: str = ""
     attachments: list[str] = []
     base_url: str = ""
+    redirect_url: str = ""
+    capture_credentials: bool
+    capture_passwords: bool
 
 
 class SMTPModel(BaseModel):

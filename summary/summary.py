@@ -590,7 +590,8 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
-    await tasks.lanuch_campaign(camp, groups.targets, auth)
+    result = await tasks.lanuch_campaign(camp, groups.targets, auth)
+    models.add_results(data=result, camp=camp)
     models.update_campaign(id, cam_in={'launch_date': datetime.now(),
                                        'status': schemas.Status.RUNING})
     return {'success': True}
