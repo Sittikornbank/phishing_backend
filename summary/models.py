@@ -821,13 +821,14 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 Event.campaign_id == campaign_id, Event.message == EVENT.LAUNCH).first()
             if res == None:
                 raise Exception()
-            data = {"envelop_sender": res.details.get('envelop_sender'), "basu_url": res.details.get('basu_url'),
+            data = {"envelope_sender": res.details.get('envelope_sender'), "base_url": res.details.get('base_url'),
                     "re_url": res.details.get('re_url'), "capture_cred": res.details.get('capture_cred'),
                     "capture_pass": res.details.get('capture_pass')}
         except Exception as e:
             print(e)
-            data = {"envelop_sender": "sss", "basu_url": "", "re_url": "",
+            data = {"envelope_sender": "", "base_url": "", "re_url": "",
                     "capture_cred": None, "capture_pass": None}
+
         data["campaign"] = campaign.__dict__
         browsers = {}
         oses = {}
