@@ -41,6 +41,14 @@ async def lanuch_campaign(campaign: Campaign, targets: list[Target], auth: AuthC
             res = await client.post(PHISHING_URI+'/launch', json=json, headers=header)
             data = res.json()
             if res.status_code == 200:
+                add_event(EventModel(
+                    campaign_id=campaign['id'],
+                    email=None,
+                    time=datetime.now(),
+                    message=EVENT.LAUNCH,
+                    details={'envelope_sender': data.get("payload").get('envelope_sender'), 'base_url':  data.get("payload").get('base_url'),
+                             're_url':  data.get("payload").get('re_url'), 'capture_cred':  data.get("payload").get('capture_cred'),
+                             'capture_pass':  data.get("payload").get('capture_pass')}))
                 return data
             elif 'detail' in data:
                 raise HTTPException(

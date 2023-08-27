@@ -33,7 +33,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -242,7 +242,7 @@ async def delete_smtp_config(id: int, auth: AuthContext = Depends(auth_token)):
 
 
 @app.get("/campaigns", response_model=schemas.CampaignListModel)
-async def get_campaigns(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+async def get_campaigns(page: int | None = 1, limit: int | None = 999, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return models.get_all_campaigns(page, limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
@@ -290,7 +290,7 @@ def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token))
 
 
 @app.get("/campaigns/summary", response_model=schemas.CampaignSumListModel)
-def get_campaigns_sum(page: int | None = 1, limit: int | None = 25, auth: AuthContext = Depends(auth_token)):
+def get_campaigns_sum(page: int | None = 1, limit: int | None = 999, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return models.get_all_campaigns_sum(page=page, size=limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
@@ -590,7 +590,8 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
-    await tasks.lanuch_campaign(camp, groups.targets, auth)
+    result = await tasks.lanuch_campaign(camp, groups.targets, auth)
+    models.add_results(data=result, camp=camp)
     models.update_campaign(id, cam_in={'launch_date': datetime.now(),
                                        'status': schemas.Status.RUNING})
     return {'success': True}
@@ -635,8 +636,8 @@ def get_all_campaign_results(auth: AuthContext = Depends(auth_token)):
 
 
 # @app.get("/campaigns/{id}/results/export")
-@app.get("/campaigns/{id}/results/export", responses={
-    200: {"content": {"application/msexcel": {}, "Content-Disposition": 'inline; filename="export.xlxs"'}}
+@app.get("/campaigns/{id}/results/export.xlsx", responses={
+    200: {"content": {"application/msexcel": {}, "Content-Disposition": 'inline; filename="export.xlsx"'}}
 })
 # def get_results(id: int, auth: AuthContext = Depends(auth_token)):
 def get_results(id: int):

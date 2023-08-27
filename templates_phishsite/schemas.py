@@ -235,6 +235,9 @@ class EmailResSchema(BaseModel):
     html: str = ""
     attachments: list[str] = []
     base_url: str = ""
+    redirect_url: str = ""
+    capture_credentials: bool
+    capture_passwords: bool
 
     class Config:
         orm_mode = True
