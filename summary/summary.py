@@ -1,5 +1,5 @@
 
-from fastapi import Request, FastAPI, status, HTTPException, Depends, Response
+from fastapi import Request, FastAPI, status, HTTPException, Depends, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -738,6 +738,57 @@ def get_campaign_pdf(id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign :{id} not found")
     return Response(content=export_pdf(camp), media_type="application/pdf")
+
+# --------------------Import-csv-------------------------#
+
+
+@app.post('/imports/groups')
+async def import_csv(f: UploadFile, auth: AuthContext = Depends(auth_token)):
+
+    if not f.content_type == 'text/csv':
+        return False
+
+    targets = []
+    df = pd.read_csv(f.file)
+    df = df.fillna('')
+
+    for index, row in df.iterrows():
+        d = {}
+
+        if 'email' in df.columns and row['email']:
+            d['email'] = row['email']
+        else:
+            continue
+
+        if 'firstname' in df.columns:
+            d['firstname'] = row['firstname']
+        else:
+            d['firstname'] = ''
+
+        if 'lastname' in df.columns:
+            d['lastname'] = row['lastname']
+        else:
+            d['lastname'] = ''
+
+        if 'phonenumber' in df.columns:
+            d['phonenumber'] = row['phonenumber']
+        else:
+            d['phonenumber'] = ''
+
+        if 'department' in df.columns:
+            d['department'] = row['department']
+        else:
+            d['department'] = ''
+
+        if 'position' in df.columns:
+            d['position'] = row['position']
+        else:
+            d['position'] = ''
+
+        targets.append(d)
+
+    await f.close()
+    return {'targets': targets}
 
 
 @app.get('/check_pool')
