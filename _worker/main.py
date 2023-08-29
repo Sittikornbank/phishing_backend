@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, Request, status
 from fastapi.responses import (HTMLResponse,
                                PlainTextResponse,
-                               Response, RedirectResponse)
+                               Response,
+                               RedirectResponse)
 from datetime import datetime, timedelta
 import uvicorn
 import jwt
@@ -82,7 +83,7 @@ async def index(requset: Request, ref: str | None = None):
     return HTMLResponse(status_code=404)
 
 
-@app.post("/", response_class=RedirectResponse)
+@app.post("/", response_class=RedirectResponse, status_code=303)
 async def index(request: Request, ref: str | None = None, email: str = Form(None),
                 username: str = Form(None), password: str = Form(None),
                 phomenumber: str = Form(None), etc: str = Form(None)):
@@ -105,6 +106,7 @@ async def index(request: Request, ref: str | None = None, email: str = Form(None
     body = await emit_event(event_type=SUBMIT, ref=ref, payload=data)
     if body:
         return RedirectResponse(body['redirect_url'], status_code=303)
+
     return RedirectResponse("/", status_code=303)
 
 
