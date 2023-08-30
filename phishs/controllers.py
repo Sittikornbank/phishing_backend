@@ -214,7 +214,7 @@ LOG_PATH = os.path.join(os.path.dirname(__file__), "logs")
 def write_log(name: str, texts: list[str]):
     name = name.strip()
     file_path = os.path.join(LOG_PATH, f"{name}.txt")
-    with open(file_path, 'a') as f:
+    with open(file_path, "a", encoding="utf-8") as f:
         f.write("------------------------------\n")
         f.write(datetime.now().isoformat())
         for t in texts:
