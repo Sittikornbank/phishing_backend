@@ -19,7 +19,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 import pandas as pd
 from io import BytesIO
-from exports import export_pdf
+from exports import export_pdf, export_docx
 
 app = FastAPI()
 
@@ -738,6 +738,21 @@ def get_campaign_pdf(id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign :{id} not found")
     return Response(content=export_pdf(camp), media_type="application/pdf")
+
+# --------------------Import-word-------------------------#
+
+
+@app.get("/campaigns/{id}/results/export_word", responses={
+    200: {"content": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document": {}, "Content-Disposition": 'inline; filename="export.docx"'}}
+})
+def get_campaign_docx(id: int):
+    camp = models.get_campaign_by_id(id)
+
+    if not camp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Campaign :{id} not found")
+    return Response(content=export_docx(camp), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 # --------------------Import-csv-------------------------#
 
