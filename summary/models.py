@@ -844,7 +844,6 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
             res = db.query(Result).filter(
                 Result.campaign_id == campaign_id).all()
             targets = len(res)
-            print(res)
             for result in res:
                 if result.open_date:
                     opened += 1
@@ -901,8 +900,8 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                         t['email'] = event.details['email']
                     if 'username' in event.details:
                         t['username'] = event.details['username']
-                    if 'password' in event.details:
-                        t['password'] = event.details['password']
+                    # if 'password' in event.details:
+                    #     t['password'] = event.details['password']
                     if 'etc' in event.details:
                         t['etc'] = event.details['etc']
                     detail['playload'] = str(t)

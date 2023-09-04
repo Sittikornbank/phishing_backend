@@ -1,5 +1,6 @@
 from pandas import DataFrame, to_datetime
 from datetime import timedelta
+import math
 
 
 def analyze_risk(df):
@@ -146,6 +147,8 @@ def format_time(seconds):
     if seconds == 'FALSE':
         return seconds
 
+    if math.isnan(seconds):  # เพิ่มการตรวจสอบสำหรับค่า NaN
+        return 'FALSE'
     days = seconds // (24 * 3600)
     seconds %= (24 * 3600)
     hours = seconds // 3600

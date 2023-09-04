@@ -747,12 +747,13 @@ def get_campaign_pdf(id: int):
 })
 def get_campaign_docx(id: int):
     camp = models.get_campaign_by_id(id)
+    same = models.get_campaign_result_by_id_for_export(id)
 
     if not camp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign :{id} not found")
-    return Response(content=export_docx(camp), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    return Response(content=export_docx(camp, same), media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 # --------------------Import-csv-------------------------#
 

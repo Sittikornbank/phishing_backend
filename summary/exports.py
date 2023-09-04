@@ -7,8 +7,8 @@ from io import BytesIO
 from xhtml2pdf import pisa
 import os
 from docx import Document
-
-
+from stat_ import format_time
+from docx.shared import Inches
 # import pandas as pd
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "export_templates")
 environment = jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATE_DIR))
@@ -70,7 +70,9 @@ def export_pdf(campaign: Campaign):
 #     document.save(output)
 #     output.seek(0)
 #     return output
-def convert_html_to_docx(data: dict):
+def convert_html_to_docx(data: dict, static: dict):
+    results, timelines, statistics = static
+
     document = Document()
     document.add_heading('Executive Summary', 0)
 
@@ -111,6 +113,13 @@ def convert_html_to_docx(data: dict):
     table.style = 'Table Grid'
     table.autofit = False
 
+    # Set column widths
+    col_widths = (Inches(2.2), Inches(0.1), Inches(0.1), Inches(
+        0.1), Inches(0.1), Inches(1.3), Inches(1.3))
+    for i, width in enumerate(col_widths):
+        for row in table.rows:
+            row.cells[i].width = width
+
     # Add header row
     header_cells = table.rows[0].cells
     header_cells[0].text = 'Email Address'
@@ -125,12 +134,12 @@ def convert_html_to_docx(data: dict):
     for res in data['details']:
         row = table.add_row().cells
         row[0].text = res['email']
-        row[1].text = 'Yes' if res['open'] else 'No'
-        row[2].text = 'Yes' if res['click'] else 'No'
-        row[3].text = 'Yes' if res['submit'] else 'No'
-        row[4].text = '-' if not res['report'] else '-'
-        row[5].text = res['os'] if res['os'] else '-'
-        row[6].text = res['browser'] if res['browser'] else '-'
+        row[1].text = '✔︎' if res['open'] else '✘'
+        row[2].text = '✔︎' if res['click'] else '✘'
+        row[3].text = '✔︎' if res['submit'] else '✘'
+        row[4].text = '✔︎' if res['report'] else '✘'
+        row[5].text = res['os'] if res['os'] else 'N/A'
+        row[6].text = res['browser'] if res['browser'] else 'N/A'
 
     document.add_page_break()  # This will insert a page break
 
@@ -151,6 +160,12 @@ def convert_html_to_docx(data: dict):
                 table = document.add_table(rows=1, cols=1)
                 table.style = 'Table Grid'
                 table.autofit = False
+                # Set column widths
+                col_widths = (Inches(1.8), Inches(1), Inches(1), Inches(
+                    1.3), Inches(1.3))
+                for i, width in enumerate(col_widths):
+                    for row in table.rows:
+                        row.cells[i].width = width
                 row = table.rows[0].cells
                 row[0].text = target['open']
 
@@ -159,6 +174,13 @@ def convert_html_to_docx(data: dict):
                 table = document.add_table(rows=1, cols=5)
                 table.style = 'Table Grid'
                 table.autofit = False
+                # Set column widths
+                col_widths = (Inches(1.8), Inches(1), Inches(1), Inches(
+                    1.3), Inches(1.3))
+                for i, width in enumerate(col_widths):
+                    for row in table.rows:
+                        row.cells[i].width = width
+
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
                 header_cells[1].text = 'IP'
@@ -179,6 +201,13 @@ def convert_html_to_docx(data: dict):
                 table = document.add_table(rows=1, cols=6)
                 table.style = 'Table Grid'
                 table.autofit = False
+                # Set column widths
+                col_widths = (Inches(1.8), Inches(1), Inches(1), Inches(
+                    1.3), Inches(1.3), Inches(1.3))
+                for i, width in enumerate(col_widths):
+                    for row in table.rows:
+                        row.cells[i].width = width
+
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
                 header_cells[1].text = 'IP'
@@ -199,7 +228,42 @@ def convert_html_to_docx(data: dict):
 
     # This will insert a page break
     # Add a section for statistics
+################## Statistics ###################
     document.add_heading('Statistics', level=0)
+
+    document.add_heading('Statistics Summary', level=2)
+
+    # สร้างตาราง
+    table = document.add_table(rows=1, cols=3)
+    table.style = 'Table Grid'
+
+    # กำหนดหัวข้อคอลัมน์
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Statistic'
+    hdr_cells[1].text = 'Mean'
+    hdr_cells[2].text = 'Standard Deviation'
+
+    statistics_data = [
+        ('Risk Percentage',
+         statistics['mean_risk_percentage'], statistics['std_risk_percentage']),
+        ('Time Sent To Submit',
+         format_time(statistics['mean_time_sent_to_submit']), format_time(statistics['std_time_sent_to_submit'])),
+        ('Time Sent To Open',
+         format_time(statistics['mean_time_sent_to_open']), format_time(statistics['std_time_sent_to_open'])),
+        ('Time Open To Click',
+         format_time(statistics['mean_time_open_to_click']), format_time(statistics['std_time_open_to_click'])),
+        ('Time Click To Submit',
+         format_time(statistics['mean_time_click_to_submit']), format_time(statistics['std_time_click_to_submit'])),
+        ('Time Sent To Report',
+         format_time(statistics['mean_time_sent_to_report']), format_time(statistics['std_time_sent_to_report']))
+    ]
+
+    # เพิ่มข้อมูลลงในตาราง
+    for statistic, mean, std_dev in statistics_data:
+        row_cells = table.add_row().cells
+        row_cells[0].text = statistic
+        row_cells[1].text = str(mean)
+        row_cells[2].text = str(std_dev)
 
     # Add statistics about browsers
     document.add_heading(
@@ -245,6 +309,9 @@ def convert_html_to_docx(data: dict):
         row = ip_table.add_row().cells
         row[0].text = ip['name']
         row[1].text = str(ip['count'])
+    sections = document.sections
+    for section in sections:
+        section.page_width = Inches(10.5)  # ปรับตามความต้องการของคุณ
 
     output = BytesIO()
     document.save(output)
@@ -252,7 +319,7 @@ def convert_html_to_docx(data: dict):
     return output.getvalue()
 
 
-def export_docx(campaign: Campaign):
+def export_docx(campaign: Campaign, result: dict):
     res = get_result_event_to_export(
         campaign_id=campaign.id, org_id=campaign.org_id)
-    return convert_html_to_docx(res)
+    return convert_html_to_docx(res, result)
