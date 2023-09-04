@@ -58,7 +58,20 @@
                     left: 0pt; width: 595pt; top: 772pt; height: 70pt;
                 }
             }
-
+            @page _stat_summary {
+                size: a4 portrait;
+                @frame header_frame {           /* Static Frame */
+                    -pdf-frame-content: header_stat_summary;
+                    left: 0pt; width: 595pt; top: 0pt; height: 70pt;
+                }
+                @frame content_frame {          /* Content Frame */
+                    left: 50pt; width: 512pt; top: 80pt; height: 682pt;
+                }
+                @frame footer_frame {           /* Another static Frame */
+                    -pdf-frame-content: footer_content;
+                    left: 0pt; width: 595pt; top: 772pt; height: 70pt;
+                }
+            }
             body{
                 font-family:"Helvetica";
             }
@@ -111,6 +124,17 @@
             <tr style="height: 65pt">
                 <td style="width:50pt"></td>
                 <td style="color:#ff5c00;vertical-align:bottom; font-size:16pt"><h1><b>Statistics</b></h1></td>
+            </tr>
+            <tr style="height: 1pt">
+                <td></td>
+                <td><div style="clear: both; border-top: solid #ff5c00 1pt;">&nbsp;</div></td>
+            </tr>
+        </table>
+
+        <table  style="display: block; text-align:left; color:#ff5c00" id="header_stat_summary">
+            <tr style="height: 65pt">
+                <td style="width:50pt"></td>
+                <td style="color:#ff5c00;vertical-align:bottom; font-size:16pt"><h1><b>Statistics Summary</b></h1></td>
             </tr>
             <tr style="height: 1pt">
                 <td></td>
@@ -216,13 +240,22 @@
                     <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
                         <td style="width:20%;">{{target.click}}</td>
                         <td style="width:20%;">{{target.ip}}</td>
-                        <td style="width:20%;">{{target.location}}</td>
+                        <td style="width:20%;">
+                            {% set locations = target.location.split(',') %}
+                            {% for location in locations %}
+                                {% if location|float > 20 %}
+                                    {{ location }}<br>
+                                {% else %}
+                                    {{ location }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
                         <td style="width:20%;">{{target.browser}}</td>
                         <td style="width:20%;">{{target.os}}</td>
                     </tr>
                 </table>
                 {% endif %}
-
+                
                 {% if target.submit %}
                 <p>Data Captured</p>
                 <table  style="display: block; text-align:left; padding-left:2pt">
@@ -237,7 +270,15 @@
                     <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
                         <td style="width:16%;">{{target.click}}</td>
                         <td style="width:16%;">{{target.ip}}</td>
-                        <td style="width:16%;">{{target.location}}</td>
+                        <td style="width:16%;">
+                            {% for location in target.location.split(',') %}
+                                {% if location|float > 16 %}
+                                    {{ location }}<br>
+                                {% else %}
+                                    {{ location }}
+                                {% endif %}
+                            {% endfor %}
+                        </td>
                         <td style="width:16%;">{{target.browser}}</td>
                         <td style="width:16%;">{{target.os}}</td>
                         <td style="width:16%;">{{target.playload}}</td>
@@ -295,6 +336,53 @@
             </tr>
             {% endfor %}
         </table>
+        
+        <pdf:nextpage name="_stat_summary" />
+
+        <h3>The following table shows are mean & standard deviation captured:</h3>
+        <table border="0.1" style="border-collapse: collapse; width: 100%;">
+            <thead>
+                <tr style="background-color: blue; color: white;">
+                    <th style="padding: 8px;">Statistic</th>
+                    <th style="padding: 8px;">Mean Deviation</th>
+                    <th style="padding: 8px;">Standard Deviation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                    <td style="padding: 8px;">Risk Percentage</td>
+                    <td style="padding: 8px;">{{ statistics[0].mean_risk_percentage }}</td>
+                    <td style="padding: 8px;">{{ statistics[0].std_risk_percentage }}</td>
+                </tr>
+                <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                    <td style="padding: 8px;">Time Send To Submit</td>
+                    <td style="padding: 8px;">{{ statistics[0].mean_time_sent_to_submit | default('FALSE') }}</td>
+                    <td style="padding: 8px;">{{ statistics[0].std_time_sent_to_submit | default('FALSE') }}</td>
+                </tr>
+                <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                    <td style="padding: 8px;">Time Send To Open</td>
+                    <td style="padding: 8px;">{{ statistics[0].mean_time_sent_to_open | default('FALSE') }}</td>
+                    <td style="padding: 8px;">{{ statistics[0].std_time_sent_to_open | default('FALSE') }}</td>
+                </tr>
+                <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                    <td style="padding: 8px;">Time Open To Click</td>
+                    <td style="padding: 8px;">{{ statistics[0].mean_time_open_to_click | default('FALSE') }}</td>
+                    <td style="padding: 8px;">{{ statistics[0].std_time_open_to_click | default('FALSE') }}</td>
+                </tr>
+                <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                    <td style="padding: 8px;">Time Click To Submit</td>
+                    <td style="padding: 8px;">{{ statistics[0].mean_time_click_to_submit | default('FALSE') }}</td>
+                    <td style="padding: 8px;">{{ statistics[0].std_time_click_to_submit | default('FALSE') }}</td>
+                </tr>
+                <tr style="height: 40pt; vertical-align:center; background-color:#efebe9">
+                    <td style="padding: 8px;">Time Sent To Report</td>
+                    <td style="padding: 8px;">{{ statistics[0].mean_time_click_to_report | default('FALSE') }}</td>
+                    <td style="padding: 8px;">{{ statistics[0].std_time_click_to_report | default('FALSE') }}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        
 
     </body>
 </html>

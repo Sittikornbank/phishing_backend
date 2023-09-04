@@ -70,8 +70,8 @@ def export_pdf(campaign: Campaign):
 #     document.save(output)
 #     output.seek(0)
 #     return output
-def convert_html_to_docx(data: dict, static: dict):
-    results, timelines, statistics = static
+def convert_html_to_docx(data: dict):
+    # results, timelines, statistics = static
 
     document = Document()
     document.add_heading('Executive Summary', 0)
@@ -243,20 +243,21 @@ def convert_html_to_docx(data: dict, static: dict):
     hdr_cells[1].text = 'Mean'
     hdr_cells[2].text = 'Standard Deviation'
 
-    statistics_data = [
-        ('Risk Percentage',
-         statistics['mean_risk_percentage'], statistics['std_risk_percentage']),
-        ('Time Sent To Submit',
-         format_time(statistics['mean_time_sent_to_submit']), format_time(statistics['std_time_sent_to_submit'])),
-        ('Time Sent To Open',
-         format_time(statistics['mean_time_sent_to_open']), format_time(statistics['std_time_sent_to_open'])),
-        ('Time Open To Click',
-         format_time(statistics['mean_time_open_to_click']), format_time(statistics['std_time_open_to_click'])),
-        ('Time Click To Submit',
-         format_time(statistics['mean_time_click_to_submit']), format_time(statistics['std_time_click_to_submit'])),
-        ('Time Sent To Report',
-         format_time(statistics['mean_time_sent_to_report']), format_time(statistics['std_time_sent_to_report']))
-    ]
+    for statistics_a in data['statistics']:
+        statistics_data = [
+            ('Risk Percentage',
+             statistics_a['mean_risk_percentage'], statistics_a['std_risk_percentage']),
+            ('Time Sent To Submit',
+             (statistics_a['mean_time_sent_to_submit']), (statistics_a['std_time_sent_to_submit'])),
+            ('Time Sent To Open',
+             (statistics_a['mean_time_sent_to_open']), (statistics_a['std_time_sent_to_open'])),
+            ('Time Open To Click',
+             (statistics_a['mean_time_open_to_click']), (statistics_a['std_time_open_to_click'])),
+            ('Time Click To Submit',
+             (statistics_a['mean_time_click_to_submit']), (statistics_a['std_time_click_to_submit'])),
+            ('Time Sent To Report',
+             (statistics_a['mean_time_sent_to_report']), (statistics_a['std_time_sent_to_report']))
+        ]
 
     # เพิ่มข้อมูลลงในตาราง
     for statistic, mean, std_dev in statistics_data:
@@ -319,7 +320,7 @@ def convert_html_to_docx(data: dict, static: dict):
     return output.getvalue()
 
 
-def export_docx(campaign: Campaign, result: dict):
+def export_docx(campaign: Campaign):
     res = get_result_event_to_export(
         campaign_id=campaign.id, org_id=campaign.org_id)
-    return convert_html_to_docx(res, result)
+    return convert_html_to_docx(res)

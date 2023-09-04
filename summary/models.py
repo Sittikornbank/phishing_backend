@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from datetime import datetime
 from dotenv import load_dotenv
 import os
-from stat_ import get_res, get_res_ex
+from stat_ import get_res, get_res_ex, format_time
 from schemas import (GroupModel, CampaignListModel, CampaignModel,
                      GroupListModel, GroupSumListModel, TargetModel,
                      EVENT, Summary, Status, EventModel, CampaignSummaryModel,
@@ -815,6 +815,22 @@ def __dict_to_list_of_pair(d: dict):
 def get_result_event_to_export(campaign_id: int, org_id: int):
     # db: Session = next(get_db(org_id))
     campaign = get_campaign_by_id(campaign_id)
+    same = get_campaign_result_by_id_for_export(campaign_id)
+    stat_tic = same[2]
+    statistics = {
+        'mean_risk_percentage': stat_tic['mean_risk_percentage'],
+        'mean_time_sent_to_submit': format_time(stat_tic['mean_time_sent_to_submit']),
+        'mean_time_sent_to_open': format_time(stat_tic['mean_time_sent_to_open']),
+        'mean_time_open_to_click': format_time(stat_tic['mean_time_open_to_click']),
+        'mean_time_click_to_submit': format_time(stat_tic['mean_time_click_to_submit']),
+        'mean_time_sent_to_report': format_time(stat_tic['mean_time_sent_to_report']),
+        'std_risk_percentage': stat_tic['std_risk_percentage'],
+        'std_time_sent_to_submit': format_time(stat_tic['std_time_sent_to_submit']),
+        'std_time_sent_to_open': format_time(stat_tic['std_time_sent_to_open']),
+        'std_time_open_to_click': format_time(stat_tic['std_time_open_to_click']),
+        'std_time_click_to_submit': format_time(stat_tic['std_time_click_to_submit']),
+        'std_time_sent_to_report': format_time(stat_tic['std_time_sent_to_report'])
+    }
     with SessionLocal() as db:
         try:
             res = db.query(Event).filter(
@@ -830,6 +846,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                     "capture_cred": None, "capture_pass": None}
 
         data["campaign"] = campaign.__dict__
+
         browsers = {}
         oses = {}
         ips = {}
@@ -920,6 +937,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
                 details.append(detail)
         except Exception as e:
             print(e)
+        data['statistics'] = [statistics]
         data['details'] = details
         data['browers'] = __dict_to_list_of_pair(browsers)
         data['oses'] = __dict_to_list_of_pair(oses)
@@ -930,7 +948,7 @@ def get_result_event_to_export(campaign_id: int, org_id: int):
         data['submitted'] = int(submitted)
         data['sent'] = int(sent)
         data['reported'] = int(reported)
-        print(data)
+        # print(data)
         return data
 
 
