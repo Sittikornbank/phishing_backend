@@ -178,7 +178,7 @@ def convert_html_to_docx(data: dict):
                             print("Row cells:", row.cells)
 
                 row = table.rows[0].cells
-                row[0].text = target['open']
+                row[0].text = target['open'].strftime('%Y-%m-%d %H:%M:%S')
 
             if target['click']:
                 document.add_paragraph("Email Link Clicked")
