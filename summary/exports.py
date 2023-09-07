@@ -142,7 +142,7 @@ def convert_html_to_docx(data: dict):
         row[2].text = '✔︎' if res['click'] else '✘'
         row[3].text = '✔︎' if res['submit'] else '✘'
         row[4].text = '✔︎' if res['report'] else '✘'
-        row[5].text = res['os'] if res['os'] else 'N/A'
+        row[5].text = 'Windows 10/11' if res['os'] and 'Windows 10' in res['os'] else 'N/A'
         row[6].text = res['browser'] if res['browser'] else 'N/A'
 
     document.add_page_break()  # This will insert a page break
@@ -206,8 +206,8 @@ def convert_html_to_docx(data: dict):
                 row[1].text = target['ip']
                 row[2].text = target['location']
                 row[3].text = target['browser']
-                row[4].text = target['os']
-
+                # row[4].text = target['os']
+                row[4].text = target['os'] if target['os'] != "Windows 10" else "Windows 10/11"
             if target['submit']:
                 document.add_paragraph("Data Captured")
                 table = document.add_table(rows=1, cols=6)
@@ -238,7 +238,8 @@ def convert_html_to_docx(data: dict):
                 row[1].text = target['ip']
                 row[2].text = target['location']
                 row[3].text = target['browser']
-                row[4].text = target['os']
+                # row[4].text = target['os']
+                row[4].text = target['os'] if target['os'] != "Windows 10" else "Windows 10/11"
                 row[5].text = target['playload']
             document.add_page_break()
 
