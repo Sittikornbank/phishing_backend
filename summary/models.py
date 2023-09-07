@@ -749,7 +749,8 @@ def count_status(all_results):
         "submit": 0,
         "report": 0,
         "total": 0,  # เพิ่มสถานะ total เพื่อนับทั้งหมด
-        "fail": 0
+        "fail": 0,
+        "nothing": 0
     }
 
     for item in all_results:
@@ -769,6 +770,8 @@ def count_status(all_results):
         if item.report_date:
             status_count["report"] += 1
 
+    # เพิ่มการคำนวณสถานะ "nothing"
+    status_count["nothing"] = status_count["sent"] - status_count["open"]
     result_summary = {
         "total": status_count["total"],
         "sent": status_count["sent"],
@@ -776,7 +779,8 @@ def count_status(all_results):
         "click": status_count["click"],
         "submit": status_count["submit"],
         "report": status_count["report"],
-        "fail": status_count["fail"]
+        "fail": status_count["fail"],
+        "nothing": status_count["nothing"]
     }
     return result_summary
 
