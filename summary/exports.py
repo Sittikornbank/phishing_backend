@@ -176,8 +176,9 @@ def convert_html_to_docx(data: dict):
                             # Print debugging information
                             print(f"Index {i} is out of range for row.cells")
                             print("Row cells:", row.cells)
-
-                row = table.rows[0].cells
+                header_cells = table.rows[0].cells
+                header_cells[0].text = 'Time'
+                row = table.add_row().cells
                 row[0].text = target['open'].strftime('%Y-%m-%d %H:%M:%S')
 
             if target['click']:
