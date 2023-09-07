@@ -208,7 +208,7 @@
         {% for target in details %}
             {% if target.open or target.click or target.submit %}
             <pdf:nextpage name="_detail" />
-            <h3>{{target.firstname}} {{target.lastname}}</h3>
+            <h3>{{ target.firstname|safe }} {{ target.lastname|safe }}</h3>
             <p>Department: {{target.department}}</p>
             <p>Email: {{target.email}}</p>
             <p>Email send: {{target.send}}</p>
