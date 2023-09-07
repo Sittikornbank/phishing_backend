@@ -122,8 +122,7 @@ def convert_html_to_docx(data: dict):
                 row.cells[i].width = width
             else:
                 # Print debugging information
-                print(f"Index {i} is out of range for row.cells")
-                print("Row cells:", row.cells)
+                pass
 
     # Add header row
     header_cells = table.rows[0].cells
@@ -173,9 +172,7 @@ def convert_html_to_docx(data: dict):
                         if i < len(row.cells):
                             row.cells[i].width = width
                         else:
-                            # Print debugging information
-                            print(f"Index {i} is out of range for row.cells")
-                            print("Row cells:", row.cells)
+                            pass
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
                 row = table.add_row().cells
@@ -194,9 +191,7 @@ def convert_html_to_docx(data: dict):
                         if i < len(row.cells):
                             row.cells[i].width = width
                         else:
-                            # Print debugging information
-                            print(f"Index {i} is out of range for row.cells")
-                            print("Row cells:", row.cells)
+                            pass
 
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
@@ -227,8 +222,7 @@ def convert_html_to_docx(data: dict):
                             row.cells[i].width = width
                         else:
                             # Print debugging information
-                            print(f"Index {i} is out of range for row.cells")
-                            print("Row cells:", row.cells)
+                            pass
 
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
