@@ -118,7 +118,10 @@ def convert_html_to_docx(data: dict):
         0.1), Inches(0.1), Inches(1.3), Inches(1.3))
     for i, width in enumerate(col_widths):
         for row in table.rows:
-            row.cells[i].width = width
+            if i < len(row.cells):  # Check if the index is within the valid range
+                row.cells[i].width = width
+            else:
+                print(f"Index {i} is out of range for row.cells")
 
     # Add header row
     header_cells = table.rows[0].cells
