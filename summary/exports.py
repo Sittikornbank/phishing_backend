@@ -151,8 +151,8 @@ def convert_html_to_docx(data: dict):
 #### Detailed Findings ########
 
     for target in data['details']:
-        document.add_heading('Detailed Findings', level=0)
         if target['open'] or target['click'] or target['submit']:
+            document.add_heading('Detailed Findings', level=0)
             document.add_heading(
                 f"{target['firstname']} {target['lastname']}", level=2)
             document.add_paragraph(
