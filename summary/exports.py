@@ -118,10 +118,12 @@ def convert_html_to_docx(data: dict):
         0.1), Inches(0.1), Inches(1.3), Inches(1.3))
     for i, width in enumerate(col_widths):
         for row in table.rows:
-            if i < len(row.cells):  # Check if the index is within the valid range
+            if i < len(row.cells):
                 row.cells[i].width = width
             else:
+                # Print debugging information
                 print(f"Index {i} is out of range for row.cells")
+                print("Row cells:", row.cells)
 
     # Add header row
     header_cells = table.rows[0].cells
@@ -168,7 +170,13 @@ def convert_html_to_docx(data: dict):
                     1.3), Inches(1.3))
                 for i, width in enumerate(col_widths):
                     for row in table.rows:
-                        row.cells[i].width = width
+                        if i < len(row.cells):
+                            row.cells[i].width = width
+                        else:
+                            # Print debugging information
+                            print(f"Index {i} is out of range for row.cells")
+                            print("Row cells:", row.cells)
+
                 row = table.rows[0].cells
                 row[0].text = target['open']
 
@@ -182,7 +190,12 @@ def convert_html_to_docx(data: dict):
                     1.3), Inches(1.3))
                 for i, width in enumerate(col_widths):
                     for row in table.rows:
-                        row.cells[i].width = width
+                        if i < len(row.cells):
+                            row.cells[i].width = width
+                        else:
+                            # Print debugging information
+                            print(f"Index {i} is out of range for row.cells")
+                            print("Row cells:", row.cells)
 
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
@@ -209,7 +222,12 @@ def convert_html_to_docx(data: dict):
                     1.3), Inches(1.3), Inches(1.3))
                 for i, width in enumerate(col_widths):
                     for row in table.rows:
-                        row.cells[i].width = width
+                        if i < len(row.cells):
+                            row.cells[i].width = width
+                        else:
+                            # Print debugging information
+                            print(f"Index {i} is out of range for row.cells")
+                            print("Row cells:", row.cells)
 
                 header_cells = table.rows[0].cells
                 header_cells[0].text = 'Time'
