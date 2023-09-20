@@ -572,6 +572,7 @@ def get_campaign_result_by_id(id: int):
             setattr(camp, 'results', analy)
             setattr(camp, 'timelines', events)
             setattr(camp, 'statistics', stat)
+            print(analy)
             return camp
         except Exception as e:
             print(e)

@@ -196,6 +196,7 @@ class ResultModel(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     position: str | None = None
+    department: str | None = None
     send_date: datetime | None = None
     open_date: datetime | None = None
     click_date: datetime | None = None
