@@ -767,6 +767,8 @@ def get_result_by_user(user_id: int):
 
 
 def count_status(all_results):
+    if not all_results:
+        return {}
     status_count = {
         "sent": 0,
         "open": 0,
