@@ -248,7 +248,7 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 999, auth: Aut
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
         return models.get_campaigns_by_org(auth.organization, page, limit)
     # read main database
-    return models.get_campaigns_by_user(id=auth.id, page=page, size=limit)
+    return models.get_campaigns_by_user(auth.id, page=page, size=limit)
 
 
 @app.get('/campaigns/graphs')
@@ -295,7 +295,7 @@ def get_campaigns_sum(page: int | None = 1, limit: int | None = 999, auth: AuthC
         return models.get_all_campaigns_sum(page=page, size=limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
         return models.get_campaigns_sum_by_org(auth.organization, page=page, size=limit)
-    return models.get_campaigns_sum_by_user(auth.id)
+    return models.get_campaigns_sum_by_user(auth.id, page=page, size=limit)
 
 
 @app.get("/campaigns/{id}", response_model=schemas.CampaignDisplayModel)
@@ -494,6 +494,7 @@ def get_campaign_result(id: int, auth: AuthContext = Depends(auth_token)):
 
 @app.get("/campaigns/{id}/summary", response_model=schemas.CampaignSummaryModel)
 def get_campaign_sum(id: int, auth: AuthContext = Depends(auth_token)):
+    camp_data = models.get_campaign_by_id(id)
     camp = models.get_campaign_sum_by_id(id)
     if not camp:
         raise HTTPException(
@@ -503,13 +504,13 @@ def get_campaign_sum(id: int, auth: AuthContext = Depends(auth_token)):
         return camp
 
     if auth.role in (Role.ADMIN, Role.AUDITOR):
-        if camp.org_id != auth.organization:
+        if camp_data.org_id != auth.organization:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
         return camp
     elif auth.role in (Role.PAID, Role.GUEST):
-        if camp.user_id != auth.id:
+        if camp_data.user_id != auth.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
