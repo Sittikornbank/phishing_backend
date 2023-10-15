@@ -756,6 +756,16 @@ def get_result_by_id(id: int):
         return
 
 
+def get_result_by_user(user_id: int):
+    # db: Session = next(get_db())
+    with SessionLocal() as db:
+        try:
+            return db.query(Result).filter(Result.user_id == user_id).first()
+        except Exception as e:
+            print(e)
+        return
+
+
 def count_status(all_results):
     status_count = {
         "sent": 0,
