@@ -524,6 +524,7 @@ def get_all_campaigns_sum(page: int | None = None, size: int | None = None):
     camp_list = CampaignSumListModel(count=camp_list.count,
                                      page=camp_list.page,
                                      last_page=camp_list.last_page,
+                                     limit=size,
                                      campaigns=campaigns)
     return camp_list
 
@@ -542,20 +543,34 @@ def get_campaign_sum_by_id(id: int):
 
 def get_campaigns_sum_by_user(user_id: int, page: int | None = None, size: int | None = None):
     camps = get_campaigns_by_user(user_id=user_id, page=page, size=size)
+    sum_cam: list[CampaignSummaryModel] = []
     for camp in camps.campaigns:
         summary = get_campaign_summary(
             camp.id, org_id=camp.org_id, group_id=camp.group_id)
-        setattr(camp, 'stats', summary)
-    return camps
+        temp = CampaignSummaryModel(**camp.dict())
+        temp.stats = summary
+        sum_cam.append(temp)
+    return CampaignSumListModel(count=camps.count,
+                                page=camps.page,
+                                last_page=camps.last_page,
+                                limit=camps.limit,
+                                campaigns=sum_cam)
 
 
 def get_campaigns_sum_by_org(org_id: int, page: int | None = None, size: int | None = None):
     camps = get_campaigns_by_user(org_id=org_id, page=page, size=size)
+    sum_cam: list[CampaignSummaryModel] = []
     for camp in camps.campaigns:
         summary = get_campaign_summary(
             camp.id, org_id=camp.org_id, group_id=camp.group_id)
-        setattr(camp, 'stats', summary)
-    return camps
+        temp = CampaignSummaryModel(**camp.dict())
+        temp.stats = summary
+        sum_cam.append(temp)
+    return CampaignSumListModel(count=camps.count,
+                                page=camps.page,
+                                last_page=camps.last_page,
+                                limit=camps.limit,
+                                campaigns=sum_cam)
 
 
 def get_campaign_result_by_id(id: int):
