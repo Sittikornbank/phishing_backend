@@ -308,13 +308,13 @@ async def get_campaign(id: int, auth: AuthContext = Depends(auth_token)):
     if auth.role == Role.SUPER:
         return campaign
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
-        if campaign.org_id != None and campaign.org_id != auth.organization:
+        if campaign.org_id != 0 and campaign.org_id != auth.organization:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Not Found campaign of id :{id}")
         return campaign
-    elif campaign.org_id != None or (
-            campaign.user_id != None and campaign.user_id != auth.id):
+    elif campaign.org_id != 0 or (
+            campaign.user_id != auth.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Not Found campaign of id :{id}")
