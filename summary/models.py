@@ -289,6 +289,7 @@ def delete_group_index(id: int):
     with SessionLocal() as db:
         try:
             c = db.query(GroupIndex).filter(GroupIndex.id == id).delete()
+            db.commit()
             return c > 0
         except Exception as e:
             print(e)
@@ -636,6 +637,7 @@ def delete_campaign(id: int):
         # db: Session = next(get_db())
         try:
             c = db.query(Campaign).filter(Campaign.id == id).delete()
+            db.commit()
             return c > 0
         except Exception as e:
             print(e)
