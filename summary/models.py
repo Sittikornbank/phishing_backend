@@ -257,7 +257,7 @@ def get_group_by_id(id: int):
         return
 
 
-def count_groups_by_user(user_id: int, org_id: int):
+def count_groups_by_user(user_id: int):
     # db: Session = next(get_db(org_id))
     with SessionLocal() as db:
         try:
@@ -760,10 +760,10 @@ def get_result_by_user(user_id: int):
     # db: Session = next(get_db())
     with SessionLocal() as db:
         try:
-            return db.query(Result).filter(Result.user_id == user_id).first()
+            return db.query(Result).filter(Result.user_id == user_id).all()
         except Exception as e:
             print(e)
-        return
+            return []
 
 
 def count_status(all_results):
@@ -1039,6 +1039,65 @@ def get_data_for_cate_graph_all():
             return
     return cate_graph
 
+# User
+
+
+def get_data_for_cate_graph_user(user_id: int):
+    cate_graph = {}
+    with SessionLocal() as db:
+        try:
+            # Filter by user_id for each query
+            results_send = db.query(Result.department, func.count()).filter(
+                Result.send_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['send'] = cate_graph_res(results_send)
+
+            results_open = db.query(Result.department, func.count()).filter(
+                Result.open_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['open'] = cate_graph_res(results_open)
+
+            results_click = db.query(Result.department, func.count()).filter(
+                Result.click_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['click'] = cate_graph_res(results_click)
+
+            results_submit = db.query(Result.department, func.count()).filter(
+                Result.submit_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['submit'] = cate_graph_res(results_submit)
+
+            results_report = db.query(Result.department, func.count()).filter(
+                Result.report_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['report'] = cate_graph_res(results_report)
+
+        except Exception as e:
+            print(e)
+            return
+
+    return cate_graph
+
+
+def get_data_for_cate_graph_user(user_id: int):
+    cate_graph = {}
+    with SessionLocal() as db:
+        try:
+            results = db.query(Result.department, func.count()).filter(
+                Result.send_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['send'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.open_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['open'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.click_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['click'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.submit_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['submit'] = cate_graph_res(results)
+            results = db.query(Result.department, func.count()).filter(
+                Result.report_date != None, Result.user_id == user_id).group_by(Result.department)
+            cate_graph['report'] = cate_graph_res(results)
+        except Exception as e:
+            print(e)
+            return
+    return cate_graph
+
 
 def get_data_for_time_graph(id: int):
     with SessionLocal() as db:
@@ -1056,6 +1115,18 @@ def get_data_for_time_graph_all():
     with SessionLocal() as db:
         try:
             events = db.query(Event).all()
+            for e in events:
+                setattr(e, 'timestamp', e.time.timestamp())
+            return events
+        except Exception as e:
+            print(e)
+            return []
+
+
+def get_data_for_time_graph_user(user_id: int):
+    with SessionLocal() as db:
+        try:
+            events = db.query(Event).filter(Event.id == user_id).all()
             for e in events:
                 setattr(e, 'timestamp', e.time.timestamp())
             return events

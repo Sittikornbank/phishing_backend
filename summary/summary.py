@@ -1,4 +1,5 @@
 
+from fastapi import Depends
 from fastapi import Request, FastAPI, status, HTTPException, Depends, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -62,7 +63,8 @@ async def get_groups(page: int | None = 1, limit: int | None = 25, auth: AuthCon
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
         return models.get_groups_by_org(auth.organization, page, limit)
     # read main database
-    return models.get_groups_by_user(id=auth.id, page=page, size=limit)
+    # return models.get_groups_by_user(id=auth.id, page=page, size=limit)
+    return models.get_groups_by_user(user_id=auth.id, page=page, size=limit)
 
 
 @app.get("/groups/summary", response_model=schemas.GroupSumListModel)
@@ -73,7 +75,8 @@ async def get_group_sum(page: int | None = 1,
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
         return models.get_sum_groups_by_org(auth.organization, page, limit)
     # read main database
-    return models.get_sum_groups_by_user(id=auth.id, page=page, size=limit)
+    # return models.get_sum_groups_by_user(user_id=auth.id, page=page, size=limit)
+    return models.get_sum_groups_by_user(org_id=auth.organization, user_id=auth.id, page=page, size=limit)
 
 
 @app.get("/groups/{id}", response_model=schemas.GroupDisplayModel)
@@ -154,7 +157,7 @@ async def create_group(group: schemas.GroupModel, auth: AuthContext = Depends(au
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="targets can only be 50 per group")
     elif auth.role == Role.GUEST:
-        if models.count_group_by_user(auth.id) >= 1:
+        if models.count_groups_by_user(auth.id) >= 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="already at maximum number of Group")
@@ -251,31 +254,81 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 999, auth: Aut
     return models.get_campaigns_by_user(auth.id, page=page, size=limit)
 
 
+# @app.get('/campaigns/graphs')
+# def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token)):
+#     if sampling < 1:
+#         sampling = 1
+#     auth_permission(auth, roles=(Role.SUPER,))
+#     cate = models.get_data_for_cate_graph_all()
+#     timelines = {}
+
+#     events = models.get_data_for_time_graph_all()
+#     if not events:
+#         return {'hist': cate, 'ts': timelines}
+#     delta = events[-1].timestamp - events[0].timestamp
+#     n = int(delta // sampling)+1
+#     time_axis = []
+#     for i in range(n):
+#         time_axis.append(datetime.fromtimestamp(
+#             events[0].timestamp + sampling*i).strftime('%m/%d/%y,%H:%M:%S'))
+#     timelines['x_axis'] = time_axis
+#     timelines['send'] = [0]*n
+#     timelines['open'] = [0]*n
+#     timelines['click'] = [0]*n
+#     timelines['submit'] = [0]*n
+#     timelines['report'] = [0]*n
+#     for e in events:
+#         i = int((e.timestamp-events[0].timestamp)//sampling)
+#         if e.message == schemas.EVENT.SEND:
+#             timelines['send'][i] += 1
+#         if e.message == schemas.EVENT.OPEN:
+#             timelines['open'][i] += 1
+#         if e.message == schemas.EVENT.CLICK:
+#             timelines['click'][i] += 1
+#         if e.message == schemas.EVENT.SUBMIT:
+#             timelines['submit'][i] += 1
+#         if e.message == schemas.EVENT.REPORT:
+#             timelines['report'][i] += 1
+#     return {'hist': cate, 'ts': timelines}
+
+
 @app.get('/campaigns/graphs')
 def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token)):
     if sampling < 1:
         sampling = 1
-    auth_permission(auth, roles=(Role.SUPER,))
-    cate = models.get_data_for_cate_graph_all()
-    timelines = {}
 
-    events = models.get_data_for_time_graph_all()
+    if auth.role == Role.SUPER:
+        auth_permission(auth, roles=(Role.SUPER,))
+        cate = models.get_data_for_cate_graph_all()
+        events = models.get_data_for_time_graph_all()
+    elif auth.role == Role.GUEST:
+        auth_permission(auth, roles=(Role.GUEST,))
+        cate = models.get_data_for_cate_graph_user(auth.id)
+        events = models.get_data_for_time_graph_user(auth.id)
+    else:
+        # Handle other roles or no role specified
+        raise HTTPException(status_code=400, detail='Invalid role')
+
+    timelines = {}
     if not events:
         return {'hist': cate, 'ts': timelines}
+
     delta = events[-1].timestamp - events[0].timestamp
-    n = int(delta // sampling)+1
+    n = int(delta // sampling) + 1
     time_axis = []
     for i in range(n):
         time_axis.append(datetime.fromtimestamp(
-            events[0].timestamp + sampling*i).strftime('%m/%d/%y,%H:%M:%S'))
+            events[0].timestamp + sampling * i).strftime('%m/%d/%y,%H:%M:%S'))
+
     timelines['x_axis'] = time_axis
-    timelines['send'] = [0]*n
-    timelines['open'] = [0]*n
-    timelines['click'] = [0]*n
-    timelines['submit'] = [0]*n
-    timelines['report'] = [0]*n
+    timelines['send'] = [0] * n
+    timelines['open'] = [0] * n
+    timelines['click'] = [0] * n
+    timelines['submit'] = [0] * n
+    timelines['report'] = [0] * n
+
     for e in events:
-        i = int((e.timestamp-events[0].timestamp)//sampling)
+        i = int((e.timestamp - events[0].timestamp) // sampling)
         if e.message == schemas.EVENT.SEND:
             timelines['send'][i] += 1
         if e.message == schemas.EVENT.OPEN:
@@ -286,6 +339,7 @@ def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token))
             timelines['submit'][i] += 1
         if e.message == schemas.EVENT.REPORT:
             timelines['report'][i] += 1
+
     return {'hist': cate, 'ts': timelines}
 
 
