@@ -183,8 +183,9 @@ def get_sum_groups_by_org(org_id: int, page: int | None = None, size: int | None
         groups = list()
         count = 0
         try:
-            groups = db.query(Group).limit(size).offset(size*(page-1)).all()
-            count = db.query(Group).count()
+            groups = db.query(Group).filter(Group.org_id == org_id).limit(
+                size).offset(size*(page-1)).all()
+            count = db.query(Group).filter(Group.org_id == org_id).count()
             for g in groups:
                 setattr(g, 'num_targets', len(g.targets))
             return GroupSumListModel(count=count, page=page,
@@ -297,6 +298,7 @@ def delete_group_index(id: int):
 
 
 def create_group(group_in: GroupModel):
+    print(group_in.org_id)
     group_index = create_group_index(group_in.org_id)
     if not group_index:
         return

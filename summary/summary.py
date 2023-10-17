@@ -63,7 +63,6 @@ async def get_groups(page: int | None = 1, limit: int | None = 25, auth: AuthCon
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
         return models.get_groups_by_org(auth.organization, page, limit)
     # read main database
-    # return models.get_groups_by_user(id=auth.id, page=page, size=limit)
     return models.get_groups_by_user(user_id=auth.id, page=page, size=limit)
 
 
@@ -169,6 +168,7 @@ async def create_group(group: schemas.GroupModel, auth: AuthContext = Depends(au
     group.org_id = auth.organization
     group = models.create_group(group)
     if group:
+        print(group)
         return group
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -647,6 +647,7 @@ async def launch(id: int, auth: AuthContext = Depends(auth_token)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Campaign :{id} not found")
     elif auth.role in (Role.PAID, Role.GUEST):
+        print(camp.user_id, auth.id)
         if camp.user_id != auth.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

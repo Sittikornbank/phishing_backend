@@ -99,6 +99,7 @@ class GroupSumModel(BaseModel):
     name: str | None
     modified_date: datetime | None
     num_targets: int | None
+    org_id: int | None
 
     class Config:
         orm_mode = True
