@@ -59,9 +59,9 @@ def get_all_users(page: int | None = None, size: int | None = None):
         return
 
 
-def get_user_by_organize(organiz: str, page: int | None = None, size: int | None = None):
+def get_user_by_organize(organiz: int, page: int | None = None, size: int | None = None):
     with SessionLocal() as db:
-        if organiz == 'None':
+        if organiz == 0:
             return
         try:
             if not page and not size:
@@ -115,6 +115,30 @@ def check_email_username_inuse(email: str, username: str):
 
 
 def create_user(user_in: UserDbModel):
+    with SessionLocal() as db:
+        try:
+            user = User(username=user_in.username,
+                        email=user_in.email,
+                        firstname=user_in.firstname,
+                        lastname=user_in.lastname,
+                        password=user_in.password,
+                        role=user_in.role.value,
+                        organization=user_in.organization,
+                        phonenumber=user_in.phonenumber,
+                        create_at=user_in.create_at,
+                        is_active=user_in.is_active)
+            user.password = (bcrypt.hashpw(user.password.encode(
+                'utf-8'), bcrypt.gensalt())).decode('utf-8')
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            return user
+        except Exception as e:
+            print(e)
+        return
+
+
+def create_user_org(user_in: UserDbModel):
     with SessionLocal() as db:
         try:
             user = User(username=user_in.username,

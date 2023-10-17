@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 import re
 import os
-
+import models
 import verify
 
 load_dotenv()
@@ -254,7 +254,8 @@ def get_users(token: str = Depends(get_token), page: int | None = None, limit: i
     if authcontext.role == Role.SUPER:
         user = get_all_users(page, limit)
     elif authcontext.role in (Role.ADMIN, Role.AUDITOR):
-        user = get_user_by_organize(authcontext.organization, page, limit)
+        user_org = get_user_by_id(authcontext.id)
+        user = get_user_by_organize(user_org.organization, page, limit)
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -282,14 +283,47 @@ def get_users(userid: int, token: str = Depends(get_token)):
         )
     elif authcontext.role in (Role.ADMIN, Role.AUDITOR):
         user = get_user_by_id(userid)
-        if user and user.organization == authcontext.organization:
-            return user
+        if user:
+            if authcontext.role == Role.SUPER:
+                return user
+            elif authcontext.role in (Role.ADMIN, Role.AUDITOR):
+                user_org = get_user_by_id(authcontext.id)
+                if user_org and user.organization == user_org.organization:
+                    return user
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Unauthorized"
+                    )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized"
+            )
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
-    )
 
+# @app.post('/users', response_model=UserDbModel)
+# def add_user(user: UserDbModel, token: str = Depends(get_token)):
+#     authcontext = check_role(token=token, roles=(Role.ADMIN, Role.SUPER))
+#     check_used_email_pass(email=user.email, username=user.username)
+#     user.id = None
+#     user.last_login = None
+#     user.create_at = datetime.now()
+
+#     result = None
+#     if authcontext.role == Role.SUPER:
+#         result = create_user(user)
+#     elif authcontext.role == Role.ADMIN:
+#         user.role = Role.AUDITOR
+#         user.organization = authcontext.organization
+#         result = models.create_user_org(user)
+#     if result:
+#         return result
+
+#     raise HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Unauthorized"
+#     )
 
 @app.post('/users', response_model=UserDbModel)
 def add_user(user: UserDbModel, token: str = Depends(get_token)):
@@ -303,10 +337,15 @@ def add_user(user: UserDbModel, token: str = Depends(get_token)):
     if authcontext.role == Role.SUPER:
         result = create_user(user)
     elif authcontext.role == Role.ADMIN:
+        user_org = get_user_by_id(authcontext.id)
         user.role = Role.AUDITOR
-        user.organization = authcontext.organization
+        user.organization = user_org.organization
+
+        # เรียกใช้ create_user_org แทน create_user
         result = create_user(user)
+
     if result:
+        print(result)
         return result
 
     raise HTTPException(
@@ -375,6 +414,24 @@ def modify_user(userid: int, user: UserFormModel, token: str = Depends(get_token
     )
 
 
+# @app.delete('/users/{userid}')
+# def del_user(userid: int, token: str = Depends(get_token)):
+#     authcontext = check_role(token=token, roles=(Role.ADMIN, Role.SUPER))
+#     if authcontext.role == Role.SUPER:
+#         if delete_user(userid):
+#             return {'success': True}
+#         return {'success': False}
+#     elif authcontext.role == Role.ADMIN:
+#         if check_organization(userid, authcontext.organization):
+#             if delete_user(userid):
+#                 return {'success': True}
+#             return {'success': False}
+
+#     raise HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Unauthorized"
+#     )
+
 @app.delete('/users/{userid}')
 def del_user(userid: int, token: str = Depends(get_token)):
     authcontext = check_role(token=token, roles=(Role.ADMIN, Role.SUPER))
@@ -383,16 +440,16 @@ def del_user(userid: int, token: str = Depends(get_token)):
             return {'success': True}
         return {'success': False}
     elif authcontext.role == Role.ADMIN:
-        if userid != authcontext.id and \
-                check_organization(userid, authcontext.organization):
+        user_org = get_user_by_id(authcontext.id)
+        if check_organization(userid, user_org.organization):
             if delete_user(userid):
                 return {'success': True}
             return {'success': False}
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Unauthorized"
-    )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
 
 
 def check_role(token: str, roles: tuple | None, organiz: tuple | None = None):

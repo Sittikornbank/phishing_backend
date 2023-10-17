@@ -249,7 +249,7 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 999, auth: Aut
     if auth.role == Role.SUPER:
         return models.get_all_campaigns(page, limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
-        return models.get_campaigns_by_org(auth.organization, page, limit)
+        return models.get_campaigns_by_org(auth.id, page=page, size=limit)
     # read main database
     return models.get_campaigns_by_user(auth.id, page=page, size=limit)
 
@@ -301,8 +301,14 @@ def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token))
         auth_permission(auth, roles=(Role.SUPER,))
         cate = models.get_data_for_cate_graph_all()
         events = models.get_data_for_time_graph_all()
-    elif auth.role == Role.GUEST:
-        auth_permission(auth, roles=(Role.GUEST,))
+
+    elif auth.role in (Role.AUDITOR, Role.ADMIN):
+        auth_permission(auth, roles=(Role.AUDITOR, Role.ADMIN))
+        cate = models.get_data_for_cate_graph_org(auth.id)
+        events = models.get_data_for_time_graph_org(auth.id)
+
+    elif auth.role in (Role.GUEST, Role.PAID):
+        auth_permission(auth, roles=(Role.GUEST, Role.PAID))
         cate = models.get_data_for_cate_graph_user(auth.id)
         events = models.get_data_for_time_graph_user(auth.id)
     else:

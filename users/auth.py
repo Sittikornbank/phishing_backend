@@ -164,7 +164,7 @@ def check_used_email_pass(email: str, username: str):
     # )
 
 
-def check_organization(userid: int, organiz: str):
+def check_organization(userid: int, organiz: int):
     user = get_user_by_id(userid)
     return user and user.organization == organiz
 

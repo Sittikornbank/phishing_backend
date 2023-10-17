@@ -1076,24 +1076,24 @@ def get_data_for_cate_graph_user(user_id: int):
     return cate_graph
 
 
-def get_data_for_cate_graph_user(user_id: int):
+def get_data_for_cate_graph_org(org_id: int):
     cate_graph = {}
     with SessionLocal() as db:
         try:
             results = db.query(Result.department, func.count()).filter(
-                Result.send_date != None, Result.user_id == user_id).group_by(Result.department)
+                Result.send_date != None, Result.user_id == org_id).group_by(Result.department)
             cate_graph['send'] = cate_graph_res(results)
             results = db.query(Result.department, func.count()).filter(
-                Result.open_date != None, Result.user_id == user_id).group_by(Result.department)
+                Result.open_date != None, Result.user_id == org_id).group_by(Result.department)
             cate_graph['open'] = cate_graph_res(results)
             results = db.query(Result.department, func.count()).filter(
-                Result.click_date != None, Result.user_id == user_id).group_by(Result.department)
+                Result.click_date != None, Result.user_id == org_id).group_by(Result.department)
             cate_graph['click'] = cate_graph_res(results)
             results = db.query(Result.department, func.count()).filter(
-                Result.submit_date != None, Result.user_id == user_id).group_by(Result.department)
+                Result.submit_date != None, Result.user_id == org_id).group_by(Result.department)
             cate_graph['submit'] = cate_graph_res(results)
             results = db.query(Result.department, func.count()).filter(
-                Result.report_date != None, Result.user_id == user_id).group_by(Result.department)
+                Result.report_date != None, Result.user_id == org_id).group_by(Result.department)
             cate_graph['report'] = cate_graph_res(results)
         except Exception as e:
             print(e)
@@ -1129,6 +1129,18 @@ def get_data_for_time_graph_user(user_id: int):
     with SessionLocal() as db:
         try:
             events = db.query(Event).filter(Event.id == user_id).all()
+            for e in events:
+                setattr(e, 'timestamp', e.time.timestamp())
+            return events
+        except Exception as e:
+            print(e)
+            return []
+
+
+def get_data_for_time_graph_org(org_id: int):
+    with SessionLocal() as db:
+        try:
+            events = db.query(Event).filter(Event.id == org_id).all()
             for e in events:
                 setattr(e, 'timestamp', e.time.timestamp())
             return events
