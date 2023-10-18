@@ -335,7 +335,7 @@ async def create_and_start_task(task: TaskModel, _=Depends(protect_api)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Cannot Access SMTP")
-    if task.auth.role == Role.ADMIN and smtp.org_id != task.auth.id:
+    if task.auth.role == Role.ADMIN and smtp.org_id != task.auth.organization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Cannot Access SMTP")
