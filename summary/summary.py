@@ -249,7 +249,8 @@ async def get_campaigns(page: int | None = 1, limit: int | None = 999, auth: Aut
     if auth.role == Role.SUPER:
         return models.get_all_campaigns(page, limit)
     elif auth.role in (Role.AUDITOR, Role.ADMIN):
-        return models.get_campaigns_by_org(auth.id, page=page, size=limit)
+        print(auth, "------> auth")
+        return models.get_campaigns_by_org(auth.organization, page=page, size=limit)
     # read main database
     return models.get_campaigns_by_user(auth.id, page=page, size=limit)
 
@@ -309,8 +310,8 @@ def get_all_graph(sampling: int = 3600, auth: AuthContext = Depends(auth_token))
 
     elif auth.role in (Role.GUEST, Role.PAID):
         auth_permission(auth, roles=(Role.GUEST, Role.PAID))
-        cate = models.get_data_for_cate_graph_user(auth.id)
-        events = models.get_data_for_time_graph_user(auth.id)
+        cate = models.get_data_for_cate_graph_user(auth.organization)
+        events = models.get_data_for_time_graph_user(auth.organization)
     else:
         # Handle other roles or no role specified
         raise HTTPException(status_code=400, detail='Invalid role')
