@@ -49,7 +49,10 @@ def authn(api_key: str, token: str):
         try:
             user = get_user_by_id(sessions[token].id)
             if user and user.is_active:
-                return AuthContext(id=user.id, role=user.role, organization=0)
+                org = 0  # Default organization value
+                if user.organization:
+                    org = user.organization
+                return AuthContext(id=user.id, role=user.role, organization=org)
         except Exception as e:
             print(e)
     return
@@ -60,6 +63,7 @@ def authz(api_key: str, token: str, roles: tuple[str] | None, organiz: tuple[str
     global sessions
     if token in sessions:
         try:
+
             access = False
             user = get_user_by_id(sessions[token].id)
             if user.is_active:
@@ -72,7 +76,10 @@ def authz(api_key: str, token: str, roles: tuple[str] | None, organiz: tuple[str
                 else:
                     access = False
                 if access:
-                    return AuthContext(id=user.id, role=user.role, organization=0)
+                    org = 0
+                    if user.organization:
+                        org = user.organization
+                    return AuthContext(id=user.id, role=user.role, organization=org)
         except Exception as e:
             print(e)
     return
